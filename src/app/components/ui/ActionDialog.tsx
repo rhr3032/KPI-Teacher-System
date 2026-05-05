@@ -19,13 +19,15 @@ type FieldOption = {
 export type ActionField = {
   name: string;
   label: string;
-  type?: "text" | "number" | "date" | "email" | "time" | "textarea" | "select" | "checkbox";
+  type?: "text" | "number" | "date" | "email" | "time" | "textarea" | "select" | "checkbox" | "file";
   placeholder?: string;
   options?: FieldOption[];
   rows?: number;
+  accept?: string;
+  multiple?: boolean;
 };
 
-export type ActionDialogValues = Record<string, string | boolean>;
+export type ActionDialogValues = Record<string, string | boolean | File[] | null>;
 
 type ActionDialogProps = {
   open: boolean;
@@ -126,6 +128,25 @@ export function ActionDialog({
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span>{field.label}</span>
+                  </label>
+                );
+              }
+
+              if (field.type === "file") {
+                const files = Array.isArray(value) ? value : [];
+
+                return (
+                  <label key={field.name} className="space-y-2 text-sm font-medium text-gray-700 sm:col-span-2">
+                    <span>{field.label}</span>
+                    <Input
+                      type="file"
+                      accept={field.accept}
+                      multiple={field.multiple}
+                      onChange={(event) => updateValue(field.name, Array.from(event.target.files ?? []))}
+                    />
+                    {files.length > 0 ? (
+                      <p className="text-xs text-gray-500">{files.length} file(s) selected</p>
+                    ) : null}
                   </label>
                 );
               }
