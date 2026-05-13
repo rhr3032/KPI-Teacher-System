@@ -1,22 +1,8 @@
 import { useMemo, useState } from "react";
-import { Add, Download, Edit, Search, Visibility } from "@mui/icons-material";
+import { useNavigate } from "react-router";
+import { Add, Download, Edit, Search, TrendingUp, Visibility } from "@mui/icons-material";
 import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
-
-type TeacherRecord = {
-  id: number;
-  name: string;
-  department: string;
-  subject: string;
-  type: string;
-  joiningDate: string;
-  experience: string;
-  academicQualification: string;
-  institutionName: string;
-  cgpa: string;
-  certificateNames: string[];
-  appointmentLetterFileName: string;
-  appointmentLetterContent: string;
-};
+import { createTeacherRecord, getTeachers, setTeachers, type TeacherRecord } from "../teacher-data";
 
 function formatDateLabel(dateValue: string) {
   if (!dateValue) {
@@ -111,79 +97,20 @@ function downloadAppointmentLetter(teacher: TeacherRecord) {
 }
 
 export default function TeacherProfile() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [teachers, setTeachers] = useState<TeacherRecord[]>(
-    [
-    {
-      id: 1,
-      name: "John Smith",
-      department: "Mathematics",
-      subject: "Algebra, Calculus",
-      type: "Full-time",
-      joiningDate: "2020-08-15",
-      experience: "5 years",
-      academicQualification: "MSc in Mathematics",
-      institutionName: "KPI University",
-      cgpa: "3.78",
-      certificateNames: ["MSc Certificate.pdf", "Teaching License.pdf"],
-      appointmentLetterFileName: "john-smith-appointment-letter.doc",
-      appointmentLetterContent: "",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      department: "Science",
-      subject: "Physics, Chemistry",
-      type: "Full-time",
-      joiningDate: "2019-01-10",
-      experience: "7 years",
-      academicQualification: "MSc in Physics",
-      institutionName: "National Science College",
-      cgpa: "3.91",
-      certificateNames: ["Degree Certificate.pdf"],
-      appointmentLetterFileName: "sarah-johnson-appointment-letter.doc",
-      appointmentLetterContent: "",
-    },
-    {
-      id: 3,
-      name: "Michael Chen",
-      department: "English",
-      subject: "Literature, Grammar",
-      type: "Part-time",
-      joiningDate: "2022-03-20",
-      experience: "3 years",
-      academicQualification: "MA in English Literature",
-      institutionName: "Central Arts College",
-      cgpa: "3.64",
-      certificateNames: ["MA Certificate.pdf"],
-      appointmentLetterFileName: "michael-chen-appointment-letter.doc",
-      appointmentLetterContent: "",
-    },
-    {
-      id: 4,
-      name: "Emma Williams",
-      department: "History",
-      subject: "World History",
-      type: "Contract",
-      joiningDate: "2023-09-01",
-      experience: "2 years",
-      academicQualification: "BA in History",
-      institutionName: "City College",
-      cgpa: "3.55",
-      certificateNames: ["BA Certificate.pdf"],
-      appointmentLetterFileName: "emma-williams-appointment-letter.doc",
-      appointmentLetterContent: "",
-    },
-    ].map((teacher) => ({
+  const [promotionDialogOpen, setPromotionDialogOpen] = useState(false);
+  const [teachers, updateTeachers] = useState<TeacherRecord[]>(() =>
+    getTeachers().map((teacher) => ({
       ...teacher,
       appointmentLetterContent: buildAppointmentLetter(teacher),
     })),
   );
-  const [selectedTeacher, setSelectedTeacher] = useState<TeacherRecord | null>(null);
   const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<TeacherRecord | null>(null);
+  const [promotionTeacherId, setPromotionTeacherId] = useState<number | null>(null);
 
   const filteredTeachers = useMemo(
     () =>
@@ -217,6 +144,15 @@ export default function TeacherProfile() {
     [editingTeacher],
   );
 
+  const promotionFormValues = useMemo<ActionDialogValues>(
+    () => ({
+      teacherId: promotionTeacherId ? String(promotionTeacherId) : teachers[0]?.id ? String(teachers[0].id) : "",
+      promotedDesignation: "Senior Teacher",
+      promotedSalary: "",
+    }),
+    [promotionTeacherId, teachers],
+  );
+
   const handleTeacherSubmit = (values: ActionDialogValues) => {
     const uploadedCertificates = Array.isArray(values.certificates) ? values.certificates : [];
     const certificateNames = uploadedCertificates.map((file) => file.name);
@@ -239,12 +175,14 @@ export default function TeacherProfile() {
 
     payload.appointmentLetterContent = buildAppointmentLetter(payload);
 
-    setTeachers((current) =>
-      editingTeacher
-        ? current.map((teacher) => (teacher.id === editingTeacher.id ? payload : teacher))
-        : [payload, ...current],
-    );
-    setSelectedTeacher(payload);
+    const nextTeachers = editingTeacher
+      ? teachers.map((teacher) =>
+          teacher.id === editingTeacher.id ? createTeacherRecord(payload, editingTeacher) : teacher,
+        )
+      : [createTeacherRecord(payload), ...teachers];
+
+    updateTeachers(nextTeachers);
+    setTeachers(nextTeachers);
     setEditingTeacher(null);
   };
 
@@ -253,23 +191,66 @@ export default function TeacherProfile() {
     setTeacherDialogOpen(true);
   };
 
+  const openPromotionDialog = () => {
+    setPromotionTeacherId(teachers[0]?.id ?? null);
+    setPromotionDialogOpen(true);
+  };
+
   const openEditTeacherDialog = (teacher: TeacherRecord) => {
     setEditingTeacher(teacher);
     setTeacherDialogOpen(true);
+  };
+
+  const openTeacherDetails = (teacher: TeacherRecord) => {
+    navigate(`/teachers/${teacher.id}`);
+  };
+
+  const handlePromotionSubmit = (values: ActionDialogValues) => {
+    const teacherId = Number(values.teacherId);
+    const promotedDesignation = String(values.promotedDesignation ?? "").trim();
+    const promotedSalary = Number(values.promotedSalary ?? 0);
+
+    if (!Number.isFinite(teacherId)) {
+      return;
+    }
+
+    const nextTeachers = teachers.map((teacher) =>
+      teacher.id === teacherId
+        ? {
+            ...teacher,
+            promotedDesignation,
+            promotedSalary: Number.isFinite(promotedSalary) ? promotedSalary : teacher.promotedSalary,
+          }
+        : teacher,
+    );
+
+    updateTeachers(nextTeachers);
+    setTeachers(nextTeachers);
+    setPromotionTeacherId(teacherId);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Teacher Profiles</h2>
-        <button
-          type="button"
-          onClick={openNewTeacherDialog}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Add />
-          Add New Teacher
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={openPromotionDialog}
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-amber-900 hover:bg-amber-100"
+          >
+            <TrendingUp />
+            Teacher Promotion
+          </button>
+          <button
+            type="button"
+            onClick={openNewTeacherDialog}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            <Add />
+            Add New Teacher
+          </button>
+        </div>
       </div>
 
       <ActionDialog
@@ -309,6 +290,26 @@ export default function TeacherProfile() {
         onSubmit={handleTeacherSubmit}
       />
 
+      <ActionDialog
+        open={promotionDialogOpen}
+        onOpenChange={setPromotionDialogOpen}
+        title="Teacher Promotion"
+        description="Promote a teacher by updating only designation and salary."
+        submitLabel="Apply Promotion"
+        initialValues={promotionFormValues}
+        fields={[
+          {
+            name: "teacherId",
+            label: "Teacher",
+            type: "select",
+            options: teachers.map((teacher) => ({ label: teacher.name, value: String(teacher.id) })),
+          },
+          { name: "promotedDesignation", label: "Promoted Designation", placeholder: "e.g. Senior Teacher" },
+          { name: "promotedSalary", label: "Promoted Salary", type: "number", placeholder: "e.g. 65000" },
+        ]}
+        onSubmit={handlePromotionSubmit}
+      />
+
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 relative">
@@ -324,6 +325,7 @@ export default function TeacherProfile() {
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
+            aria-label="Filter teachers by department"
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Departments</option>
@@ -335,6 +337,7 @@ export default function TeacherProfile() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
+            aria-label="Filter teachers by type"
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Types</option>
@@ -382,7 +385,7 @@ export default function TeacherProfile() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
                         type="button"
-                        onClick={() => setSelectedTeacher(teacher)}
+                        onClick={() => openTeacherDetails(teacher)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded"
                         title="View teacher"
                       >
@@ -414,18 +417,6 @@ export default function TeacherProfile() {
         </div>
       </div>
 
-      {selectedTeacher && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">Selected Teacher</h3>
-          <p className="text-sm text-blue-800">{selectedTeacher.name} - {selectedTeacher.department} - {selectedTeacher.subject}</p>
-          <p className="text-sm text-blue-800 mt-1">
-            Qualification: {selectedTeacher.academicQualification || "-"} | Institution: {selectedTeacher.institutionName || "-"} | CGPA: {selectedTeacher.cgpa || "-"}
-          </p>
-          <p className="text-sm text-blue-800 mt-1">
-            Certificates: {selectedTeacher.certificateNames.length ? selectedTeacher.certificateNames.join(", ") : "None"}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
