@@ -108,7 +108,16 @@ export default function Dashboard() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [staffAttendanceSnapshot]);
 
-  const pieColors = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
+  const departmentColors = useMemo(() => {
+    const palette = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#84cc16", "#f97316"];
+    const departments = [...new Set([...teacherDepartmentPieData, ...staffDepartmentPieData].map((item) => item.name))].sort();
+
+    return departments.reduce<Record<string, string>>((acc, department, index) => {
+      acc[department] = palette[index % palette.length];
+      return acc;
+    }, {});
+  }, [staffDepartmentPieData, teacherDepartmentPieData]);
+
   const showTeacherAttendance = attendanceFilter === "all" || attendanceFilter === "teacher";
   const showStaffAttendance = attendanceFilter === "all" || attendanceFilter === "staff";
 
@@ -166,10 +175,21 @@ export default function Dashboard() {
                 <Tooltip />
                 <Legend />
                 {showTeacherAttendance && (
-                  <Bar dataKey="teacherAttendance" name="Teacher Attendance %" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="teacherAttendance" name="Teacher Attendance %" radius={[6, 6, 0, 0]}>
+                    {departmentData.map((entry) => (
+                      <Cell key={`teacher-${entry.name}`} fill={departmentColors[entry.name] ?? "#2563eb"} />
+                    ))}
+                  </Bar>
                 )}
                 {showStaffAttendance && (
-                  <Bar dataKey="staffAttendance" name="Staff Attendance %" fill="#10b981" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="staffAttendance" name="Staff Attendance %" radius={[6, 6, 0, 0]}>
+                    {departmentData.map((entry) => (
+                      <Cell
+                        key={`staff-${entry.name}`}
+                        fill={`${departmentColors[entry.name] ?? "#10b981"}CC`}
+                      />
+                    ))}
+                  </Bar>
                 )}
               </BarChart>
             </ResponsiveContainer>
@@ -186,7 +206,7 @@ export default function Dashboard() {
               <PieChart>
                 <Pie data={typeData} dataKey="value" nameKey="name" outerRadius={100} innerRadius={60} paddingAngle={4}>
                   {typeData.map((entry, index) => (
-                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                    <Cell key={entry.name} fill={["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"][index % 5]} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -208,7 +228,7 @@ export default function Dashboard() {
               <PieChart>
                 <Pie data={teacherDepartmentPieData} dataKey="value" nameKey="name" outerRadius={110} innerRadius={65} paddingAngle={4}>
                   {teacherDepartmentPieData.map((entry, index) => (
-                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                    <Cell key={entry.name} fill={departmentColors[entry.name] ?? "#2563eb"} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -228,7 +248,7 @@ export default function Dashboard() {
               <PieChart>
                 <Pie data={staffDepartmentPieData} dataKey="value" nameKey="name" outerRadius={110} innerRadius={65} paddingAngle={4}>
                   {staffDepartmentPieData.map((entry, index) => (
-                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                    <Cell key={entry.name} fill={departmentColors[entry.name] ?? "#2563eb"} />
                   ))}
                 </Pie>
                 <Tooltip />
