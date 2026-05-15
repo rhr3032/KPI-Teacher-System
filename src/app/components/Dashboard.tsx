@@ -6,12 +6,13 @@ import {
   TrendingUp,
   TrendingDown,
 } from "@mui/icons-material";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BarChart, Bar, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getTeachers } from "../teacher-data";
 
 export default function Dashboard() {
   const teachers = useMemo(() => getTeachers(), []);
+  const [attendanceFilter, setAttendanceFilter] = useState<"all" | "teacher" | "staff">("all");
   const staffAttendanceSnapshot = useMemo(
     () => [
       { department: "Administration", status: "Active" },
@@ -90,6 +91,8 @@ export default function Dashboard() {
   }, [teachers]);
 
   const pieColors = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
+  const showTeacherAttendance = attendanceFilter === "all" || attendanceFilter === "teacher";
+  const showStaffAttendance = attendanceFilter === "all" || attendanceFilter === "staff";
 
   return (
     <div className="space-y-6">
@@ -118,9 +121,23 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="rounded-lg bg-white shadow xl:col-span-2">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h3 className="text-lg font-semibold text-gray-900">Department Attendance Overview</h3>
-            <p className="text-sm text-gray-600">Teacher and staff attendance rates grouped by department.</p>
+          <div className="border-b border-gray-200 px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Department Attendance Overview</h3>
+              <p className="text-sm text-gray-600">Teacher and staff attendance rates grouped by department.</p>
+            </div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <span>Filter</span>
+              <select
+                value={attendanceFilter}
+                onChange={(event) => setAttendanceFilter(event.target.value as "all" | "teacher" | "staff")}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Both</option>
+                <option value="teacher">Teacher</option>
+                <option value="staff">Staff</option>
+              </select>
+            </label>
           </div>
           <div className="p-6">
             <ResponsiveContainer width="100%" height={320}>
@@ -130,8 +147,12 @@ export default function Dashboard() {
                 <YAxis tick={{ fill: "#6b7280" }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="teacherAttendance" name="Teacher Attendance %" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="staffAttendance" name="Staff Attendance %" fill="#10b981" radius={[6, 6, 0, 0]} />
+                {showTeacherAttendance && (
+                  <Bar dataKey="teacherAttendance" name="Teacher Attendance %" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                )}
+                {showStaffAttendance && (
+                  <Bar dataKey="staffAttendance" name="Staff Attendance %" fill="#10b981" radius={[6, 6, 0, 0]} />
+                )}
               </BarChart>
             </ResponsiveContainer>
           </div>
