@@ -29,7 +29,6 @@ const sectionIcons = {
 
 export default function Settings() {
   const { config, resetConfig } = useSystemConfig();
-  const totalOptions = Object.values(config).reduce((sum, list) => sum + list.length, 0);
 
   return (
     <div className="space-y-6">
@@ -53,21 +52,6 @@ export default function Settings() {
           <RestartAlt fontSize="small" />
           Reset Defaults
         </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-lg bg-white shadow p-5">
-          <p className="text-sm text-gray-600">Total Option Groups</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{settingsSections.length}</p>
-        </div>
-        <div className="rounded-lg bg-white shadow p-5">
-          <p className="text-sm text-gray-600">Total Dropdown Values</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{totalOptions}</p>
-        </div>
-        <div className="rounded-lg bg-white shadow p-5">
-          <p className="text-sm text-gray-600">System Scope</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">Teacher + Staff</p>
-        </div>
       </div>
 
       <div className="rounded-2xl bg-white shadow p-4 sm:p-6">
