@@ -52,7 +52,7 @@ function buildAppointmentLetter(teacher: TeacherRecord) {
     <div class="letter">
       <div class="header">
         <h1>Appointment Letter</h1>
-        <p>KPI Teacher System</p>
+        <p>HR Management System</p>
       </div>
       <p>Date: ${formatDateLabel(teacher.joiningDate)}</p>
       <p>Dear ${teacher.name},</p>
@@ -79,7 +79,7 @@ function buildAppointmentLetter(teacher: TeacherRecord) {
       <div class="signature">
         <p>Sincerely,</p>
         <p><strong>Administration</strong></p>
-        <p>KPI Teacher System</p>
+        <p>HR Management System</p>
       </div>
     </div>
   </body>

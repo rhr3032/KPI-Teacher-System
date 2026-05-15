@@ -1,2 +1,2 @@
 
-# KPI Teacher System
+# HR Management System
