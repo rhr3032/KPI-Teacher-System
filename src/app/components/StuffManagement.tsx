@@ -1,6 +1,7 @@
 import { Add, Badge, Edit, Groups, Search, Visibility, Work } from "@mui/icons-material";
 import { useMemo, useState } from "react";
 import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
+import { useSystemConfig } from "../system-config";
 
 type StaffRecord = {
   id: number;
@@ -8,6 +9,8 @@ type StaffRecord = {
   name: string;
   department: string;
   designation: string;
+  educationalQualification: string;
+  shift: string;
   joiningDate: string;
   phone: string;
   email: string;
@@ -18,6 +21,7 @@ type StaffRecord = {
 };
 
 export default function StuffManagement() {
+  const { config } = useSystemConfig();
   const [searchTerm, setSearchTerm] = useState("");
   const [staffDialogOpen, setStaffDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffRecord | null>(null);
@@ -28,6 +32,8 @@ export default function StuffManagement() {
       name: "John Smith",
       department: "Administration",
       designation: "HR Officer",
+      educationalQualification: "MSc",
+      shift: "Morning",
       joiningDate: "2020-08-15",
       phone: "+1-555-0101",
       email: "john.smith@hrms.edu",
@@ -42,6 +48,8 @@ export default function StuffManagement() {
       name: "Sarah Johnson",
       department: "Accounts",
       designation: "Payroll Assistant",
+      educationalQualification: "BSc",
+      shift: "Day",
       joiningDate: "2021-02-10",
       phone: "+1-555-0102",
       email: "sarah.johnson@hrms.edu",
@@ -56,6 +64,8 @@ export default function StuffManagement() {
       name: "Michael Chen",
       department: "IT",
       designation: "Systems Support",
+      educationalQualification: "Diploma",
+      shift: "Evening",
       joiningDate: "2022-05-01",
       phone: "+1-555-0103",
       email: "michael.chen@hrms.edu",
@@ -86,6 +96,8 @@ export default function StuffManagement() {
       name: editingStaff?.name ?? "",
       department: editingStaff?.department ?? "",
       designation: editingStaff?.designation ?? "",
+      educationalQualification: editingStaff?.educationalQualification ?? config.educationalQualifications[0] ?? "BSc",
+      shift: editingStaff?.shift ?? config.shifts[0] ?? "Morning",
       joiningDate: editingStaff?.joiningDate ?? "",
       phone: editingStaff?.phone ?? "",
       email: editingStaff?.email ?? "",
@@ -94,7 +106,7 @@ export default function StuffManagement() {
       nationalId: editingStaff?.nationalId ?? "",
       status: editingStaff?.status ?? "Active",
     }),
-    [editingStaff],
+    [config, editingStaff],
   );
 
   const openNewStaffDialog = () => {
@@ -119,6 +131,8 @@ export default function StuffManagement() {
       name: String(values.name ?? ""),
       department: String(values.department ?? ""),
       designation: String(values.designation ?? ""),
+      educationalQualification: String(values.educationalQualification ?? config.educationalQualifications[0] ?? "BSc"),
+      shift: String(values.shift ?? config.shifts[0] ?? "Morning"),
       joiningDate: String(values.joiningDate ?? ""),
       phone: String(values.phone ?? ""),
       email: String(values.email ?? ""),
@@ -173,8 +187,15 @@ export default function StuffManagement() {
         fields={[
           { name: "employeeId", label: "Employee ID", placeholder: "HR-1001" },
           { name: "name", label: "Full Name", placeholder: "Enter full name" },
-          { name: "department", label: "Department", placeholder: "Administration" },
-          { name: "designation", label: "Designation", placeholder: "HR Officer" },
+          { name: "department", label: "Department", type: "select", options: config.departments.map((value) => ({ label: value, value })) },
+          { name: "designation", label: "Designation", type: "select", options: config.designations.map((value) => ({ label: value, value })) },
+          {
+            name: "educationalQualification",
+            label: "Educational Qualification",
+            type: "select",
+            options: config.educationalQualifications.map((value) => ({ label: value, value })),
+          },
+          { name: "shift", label: "Shift", type: "select", options: config.shifts.map((value) => ({ label: value, value })) },
           { name: "joiningDate", label: "Joining Date", type: "date" },
           { name: "phone", label: "Phone", placeholder: "+1-555-0101" },
           { name: "email", label: "Email", type: "email", placeholder: "name@hrms.edu" },
@@ -230,6 +251,8 @@ export default function StuffManagement() {
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Employee ID</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Department</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Designation</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Qualification</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Shift</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Joining Date</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Contact</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
@@ -243,6 +266,8 @@ export default function StuffManagement() {
                   <td className="py-3 px-4 text-gray-700">{staff.employeeId}</td>
                   <td className="py-3 px-4 text-gray-700">{staff.department}</td>
                   <td className="py-3 px-4 text-gray-700">{staff.designation}</td>
+                  <td className="py-3 px-4 text-gray-700">{staff.educationalQualification}</td>
+                  <td className="py-3 px-4 text-gray-700">{staff.shift}</td>
                   <td className="py-3 px-4 text-gray-700">{staff.joiningDate}</td>
                   <td className="py-3 px-4 text-gray-700">
                     <div className="space-y-1">

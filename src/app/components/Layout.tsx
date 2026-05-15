@@ -8,6 +8,7 @@ import {
   EventNote,
   ExitToApp,
   Inventory2,
+  Settings as SettingsIcon,
   Menu,
 } from "@mui/icons-material";
 import { useState } from "react";
@@ -22,6 +23,7 @@ export default function Layout() {
     { path: "/payroll", label: "Payroll", icon: <AttachMoney /> },
     { path: "/leave", label: "Leave Management", icon: <EventNote /> },
     { path: "/staff", label: "Staff", icon: <Inventory2 /> },
+    { path: "/settings", label: "Settings", icon: <SettingsIcon /> },
     { path: "/exit", label: "Exit Management", icon: <ExitToApp /> },
   ];
 

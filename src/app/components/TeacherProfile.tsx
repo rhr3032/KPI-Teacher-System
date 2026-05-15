@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Add, Download, Edit, Search, TrendingUp, Visibility } from "@mui/icons-material";
 import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
 import { createTeacherRecord, getTeachers, setTeachers, type TeacherRecord } from "../teacher-data";
+import { useSystemConfig } from "../system-config";
 
 function formatDateLabel(dateValue: string) {
   if (!dateValue) {
@@ -60,6 +61,7 @@ function buildAppointmentLetter(teacher: TeacherRecord) {
         We are pleased to appoint you as a ${teacher.type.toLowerCase()} teacher in the ${teacher.department} department,
         teaching ${teacher.subject}.
       </p>
+      <p><strong>Shift:</strong> ${teacher.shift || "-"}</p>
       <div class="meta">
         <h2>Candidate Details</h2>
         <p><strong>Academic Qualification:</strong> ${teacher.academicQualification || "-"}</p>
@@ -98,6 +100,7 @@ function downloadAppointmentLetter(teacher: TeacherRecord) {
 
 export default function TeacherProfile() {
   const navigate = useNavigate();
+  const { config } = useSystemConfig();
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -133,6 +136,7 @@ export default function TeacherProfile() {
       name: editingTeacher?.name ?? "",
       department: editingTeacher?.department ?? "",
       subject: editingTeacher?.subject ?? "",
+      shift: editingTeacher?.shift ?? config.shifts[0] ?? "Morning",
       type: editingTeacher?.type ?? "Full-time",
       joiningDate: editingTeacher?.joiningDate ?? "",
       experience: editingTeacher?.experience ?? "",
@@ -142,6 +146,7 @@ export default function TeacherProfile() {
       certificates: [],
     }),
     [editingTeacher],
+    [config, editingTeacher],
   );
 
   const promotionFormValues = useMemo<ActionDialogValues>(
@@ -162,6 +167,7 @@ export default function TeacherProfile() {
       name: String(values.name ?? ""),
       department: String(values.department ?? ""),
       subject: String(values.subject ?? ""),
+      shift: String(values.shift ?? config.shifts[0] ?? "Morning"),
       type: String(values.type ?? "Full-time"),
       joiningDate: String(values.joiningDate ?? ""),
       experience: String(values.experience ?? ""),
@@ -262,8 +268,9 @@ export default function TeacherProfile() {
         initialValues={teacherFormValues}
         fields={[
           { name: "name", label: "Full Name", placeholder: "Enter teacher name" },
-          { name: "department", label: "Department", placeholder: "Enter department" },
-          { name: "subject", label: "Subject(s)", placeholder: "Enter subjects taught" },
+          { name: "department", label: "Department", type: "select", options: config.departments.map((value) => ({ label: value, value })) },
+          { name: "subject", label: "Subject(s)", type: "select", options: config.subjects.map((value) => ({ label: value, value })) },
+          { name: "shift", label: "Shift", type: "select", options: config.shifts.map((value) => ({ label: value, value })) },
           {
             name: "type",
             label: "Teacher Type",
@@ -276,7 +283,12 @@ export default function TeacherProfile() {
           },
           { name: "joiningDate", label: "Joining Date", type: "date" },
           { name: "experience", label: "Experience", placeholder: "e.g. 5 years" },
-          { name: "academicQualification", label: "Academic Qualification", placeholder: "e.g. MEd in Education" },
+          {
+            name: "academicQualification",
+            label: "Academic Qualification",
+            type: "select",
+            options: config.educationalQualifications.map((value) => ({ label: value, value })),
+          },
           { name: "institutionName", label: "Institution Name", placeholder: "Enter institution name" },
           { name: "cgpa", label: "CGPA", placeholder: "e.g. 3.75" },
           {
@@ -304,7 +316,12 @@ export default function TeacherProfile() {
             type: "select",
             options: teachers.map((teacher) => ({ label: teacher.name, value: String(teacher.id) })),
           },
-          { name: "promotedDesignation", label: "Promoted Designation", placeholder: "e.g. Senior Teacher" },
+          {
+            name: "promotedDesignation",
+            label: "Promoted Designation",
+            type: "select",
+            options: config.designations.map((value) => ({ label: value, value })),
+          },
           { name: "promotedSalary", label: "Promoted Salary", type: "number", placeholder: "e.g. 65000" },
         ]}
         onSubmit={handlePromotionSubmit}
@@ -355,6 +372,7 @@ export default function TeacherProfile() {
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Department</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Subject</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Shift</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Joining Date</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Experience</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
@@ -379,6 +397,7 @@ export default function TeacherProfile() {
                       {teacher.type}
                     </span>
                   </td>
+                  <td className="py-3 px-4 text-gray-700">{teacher.shift || "-"}</td>
                   <td className="py-3 px-4 text-gray-700">{teacher.joiningDate}</td>
                   <td className="py-3 px-4 text-gray-700">{teacher.experience}</td>
                   <td className="py-3 px-4">

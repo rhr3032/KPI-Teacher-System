@@ -3,6 +3,7 @@ export type TeacherCore = {
   name: string;
   department: string;
   subject: string;
+  shift?: string;
   type: string;
   joiningDate: string;
   experience: string;
@@ -132,6 +133,7 @@ function buildTeacherRecord(core: TeacherCore): TeacherRecord {
 
   return {
     ...core,
+    shift: core.shift ?? ["Morning", "Day", "Evening"][seed % 3],
     employeeId: `TCH-${String(seed).padStart(4, "0")}`,
     dateOfBirth: `198${seed % 10}-0${(seed % 6) + 1}-1${seed % 8}`,
     gender: seed % 2 === 0 ? "Female" : "Male",

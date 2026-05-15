@@ -8,6 +8,7 @@ import Payroll from "./components/Payroll";
 import LeaveManagement from "./components/LeaveManagement";
 import ExitManagement from "./components/ExitManagement";
 import StuffManagement from "./components/StuffManagement";
+import Settings from "./components/Settings";
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
       { path: "leave", Component: LeaveManagement },
       { path: "staff", Component: StuffManagement },
       { path: "stuff", Component: StuffManagement },
+      { path: "settings", Component: Settings },
       { path: "exit", Component: ExitManagement },
     ],
   },
