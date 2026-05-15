@@ -19,7 +19,7 @@ const systemFeatureOptions = [
   "Staff",
   "Vacancy Management",
   "Settings",
-  "Exit Management",
+  "Resign Management",
 ];
 
 export default function RoleManagement() {

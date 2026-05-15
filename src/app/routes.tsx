@@ -8,7 +8,7 @@ import Payroll from "./components/Payroll";
 import AccountingFinance from "./components/AccountingFinance";
 import NotFound from "./components/NotFound";
 import LeaveManagement from "./components/LeaveManagement";
-import ExitManagement from "./components/ExitManagement";
+import ResignManagement from "./components/ExitManagement";
 import StuffManagement from "./components/StuffManagement";
 import Settings from "./components/Settings";
 import SettingsSection from "./components/SettingsSection";
@@ -34,7 +34,7 @@ export const router = createBrowserRouter([
       { path: "settings/roles", Component: RoleManagement },
       { path: "settings/vacancies", Component: VacancyManagement },
       { path: "settings/:sectionKey", Component: SettingsSection },
-      { path: "exit", Component: ExitManagement },
+      { path: "resign", Component: ResignManagement }, // Updated route
       { path: "*", Component: NotFound },
     ],
   },

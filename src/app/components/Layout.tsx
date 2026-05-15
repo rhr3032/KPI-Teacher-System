@@ -25,7 +25,7 @@ export default function Layout() {
     { path: "/leave", label: "Leave Management", icon: <EventNote /> },
     { path: "/staff", label: "Staff", icon: <Inventory2 /> },
     { path: "/settings", label: "Settings", icon: <SettingsIcon /> },
-    { path: "/exit", label: "Exit Management", icon: <ExitToApp /> },
+    { path: "/resign", label: "Resign Management", icon: <ExitToApp /> },
   ];
 
   return (
