@@ -136,7 +136,7 @@ export default function TeacherProfile() {
       name: editingTeacher?.name ?? "",
       department: editingTeacher?.department ?? "",
       subject: editingTeacher?.subject ?? "",
-      shift: editingTeacher?.shift ?? config.shifts[0] ?? "Morning",
+      shift: editingTeacher?.shift ?? config.shifts[0]?.name ?? "Morning",
       type: editingTeacher?.type ?? "Full-time",
       joiningDate: editingTeacher?.joiningDate ?? "",
       experience: editingTeacher?.experience ?? "",
@@ -145,7 +145,6 @@ export default function TeacherProfile() {
       cgpa: editingTeacher?.cgpa ?? "",
       certificates: [],
     }),
-    [editingTeacher],
     [config, editingTeacher],
   );
 
@@ -167,7 +166,7 @@ export default function TeacherProfile() {
       name: String(values.name ?? ""),
       department: String(values.department ?? ""),
       subject: String(values.subject ?? ""),
-      shift: String(values.shift ?? config.shifts[0] ?? "Morning"),
+      shift: String(values.shift ?? config.shifts[0]?.name ?? "Morning"),
       type: String(values.type ?? "Full-time"),
       joiningDate: String(values.joiningDate ?? ""),
       experience: String(values.experience ?? ""),
@@ -270,7 +269,7 @@ export default function TeacherProfile() {
           { name: "name", label: "Full Name", placeholder: "Enter teacher name" },
           { name: "department", label: "Department", type: "select", options: config.departments.map((value) => ({ label: value, value })) },
           { name: "subject", label: "Subject(s)", type: "select", options: config.subjects.map((value) => ({ label: value, value })) },
-          { name: "shift", label: "Shift", type: "select", options: config.shifts.map((value) => ({ label: value, value })) },
+          { name: "shift", label: "Shift", type: "select", options: config.shifts.map((value) => ({ label: value.name, value: value.name })) },
           {
             name: "type",
             label: "Teacher Type",
