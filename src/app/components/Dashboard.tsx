@@ -12,6 +12,14 @@ import { getTeachers, formatCurrency } from "../teacher-data";
 
 export default function Dashboard() {
   const teachers = useMemo(() => getTeachers(), []);
+  const staffAttendanceSnapshot = useMemo(
+    () => [
+      { department: "Administration", status: "Active" },
+      { department: "Accounts", status: "Active" },
+      { department: "IT", status: "On Leave" },
+    ],
+    [],
+  );
 
   const stats = [
     { label: "Total Teachers", value: "247", change: "+12", trend: "up", icon: <People /> },
@@ -20,36 +28,57 @@ export default function Dashboard() {
     { label: "Active Tasks", value: "42", change: "+5", trend: "up", icon: <Assignment /> },
   ];
 
-  const departmentChartData = useMemo(
-    () =>
-      teachers.reduce<Record<string, { name: string; teachers: number; attendanceRate: number }>>(
-        (acc, teacher) => {
-          if (!acc[teacher.department]) {
-            acc[teacher.department] = {
-              name: teacher.department,
-              teachers: 0,
-              attendanceRate: 0,
-            };
-          }
+  const departmentData = useMemo(() => {
+    const teacherDepartmentData = teachers.reduce<Record<string, { teacherAttendanceTotal: number; teacherCount: number }>>(
+      (acc, teacher) => {
+        if (!acc[teacher.department]) {
+          acc[teacher.department] = {
+            teacherAttendanceTotal: 0,
+            teacherCount: 0,
+          };
+        }
 
-          acc[teacher.department].teachers += 1;
-          acc[teacher.department].attendanceRate += teacher.attendance.attendanceRate;
-          return acc;
-        },
-        {},
-      ),
-    [teachers],
-  );
+        acc[teacher.department].teacherAttendanceTotal += teacher.attendance.attendanceRate;
+        acc[teacher.department].teacherCount += 1;
+        return acc;
+      },
+      {},
+    );
 
-  const departmentData = useMemo(
-    () =>
-      Object.values(departmentChartData).map((item) => ({
-        name: item.name,
-        teachers: item.teachers,
-        attendanceRate: Math.round(item.attendanceRate / item.teachers),
-      })),
-    [departmentChartData],
-  );
+    const staffDepartmentData = staffAttendanceSnapshot.reduce<Record<string, { staffPresent: number; staffTotal: number }>>(
+      (acc, staff) => {
+        if (!acc[staff.department]) {
+          acc[staff.department] = {
+            staffPresent: 0,
+            staffTotal: 0,
+          };
+        }
+
+        acc[staff.department].staffTotal += 1;
+        if (staff.status === "Active") {
+          acc[staff.department].staffPresent += 1;
+        }
+
+        return acc;
+      },
+      {},
+    );
+
+    return [...new Set([...Object.keys(teacherDepartmentData), ...Object.keys(staffDepartmentData)])]
+      .sort()
+      .map((department) => {
+        const teacherStats = teacherDepartmentData[department];
+        const staffStats = staffDepartmentData[department];
+
+        return {
+          name: department,
+          teacherAttendance: teacherStats
+            ? Math.round(teacherStats.teacherAttendanceTotal / teacherStats.teacherCount)
+            : 0,
+          staffAttendance: staffStats ? Math.round((staffStats.staffPresent / staffStats.staffTotal) * 100) : 0,
+        };
+      });
+  }, [staffAttendanceSnapshot, teachers]);
 
   const typeData = useMemo(() => {
     const counts = teachers.reduce<Record<string, number>>((acc, teacher) => {
@@ -81,14 +110,9 @@ export default function Dashboard() {
           <div key={index} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                <div className="flex items-center mt-2">
-                  {stat.trend === "up" ? (
-                    <TrendingUp className="text-green-600 text-sm" />
-                  ) : (
-                    <TrendingDown className="text-red-600 text-sm" />
-                  )}
+                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
                   <span
                     className={`text-sm ml-1 ${
                       stat.trend === "up" ? "text-green-600" : "text-red-600"
@@ -107,8 +131,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="rounded-lg bg-white shadow xl:col-span-2">
           <div className="border-b border-gray-200 px-6 py-4">
-            <h3 className="text-lg font-semibold text-gray-900">Department Overview</h3>
-            <p className="text-sm text-gray-600">Teacher count, attendance, and performance by department.</p>
+            <h3 className="text-lg font-semibold text-gray-900">Department Attendance Overview</h3>
+            <p className="text-sm text-gray-600">Teacher and staff attendance rates grouped by department.</p>
           </div>
           <div className="p-6">
             <ResponsiveContainer width="100%" height={320}>
@@ -118,8 +142,8 @@ export default function Dashboard() {
                 <YAxis tick={{ fill: "#6b7280" }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="teachers" name="Teachers" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="attendanceRate" name="Attendance %" fill="#10b981" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="teacherAttendance" name="Teacher Attendance %" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="staffAttendance" name="Staff Attendance %" fill="#10b981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
