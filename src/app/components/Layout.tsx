@@ -21,6 +21,7 @@ export default function Layout() {
     { path: "/teachers", label: "Teacher Profiles", icon: <People /> },
     { path: "/attendance", label: "Attendance", icon: <AccessTime /> },
     { path: "/payroll", label: "Payroll", icon: <AttachMoney /> },
+    { path: "/accounting", label: "Accounting & Finance", icon: <Assessment /> },
     { path: "/leave", label: "Leave Management", icon: <EventNote /> },
     { path: "/staff", label: "Staff", icon: <Inventory2 /> },
     { path: "/settings", label: "Settings", icon: <SettingsIcon /> },

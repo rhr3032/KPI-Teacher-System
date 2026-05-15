@@ -5,6 +5,7 @@ import TeacherProfile from "./components/TeacherProfile";
 import TeacherDetails from "./components/TeacherDetails";
 import Attendance from "./components/Attendance";
 import Payroll from "./components/Payroll";
+import AccountingFinance from "./components/AccountingFinance";
 import LeaveManagement from "./components/LeaveManagement";
 import ExitManagement from "./components/ExitManagement";
 import StuffManagement from "./components/StuffManagement";
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: "teachers/:teacherId", Component: TeacherDetails },
       { path: "attendance", Component: Attendance },
       { path: "payroll", Component: Payroll },
+      { path: "accounting", Component: AccountingFinance },
       { path: "leave", Component: LeaveManagement },
       { path: "staff", Component: StuffManagement },
       { path: "stuff", Component: StuffManagement },
