@@ -6,6 +6,7 @@ import TeacherDetails from "./components/TeacherDetails";
 import Attendance from "./components/Attendance";
 import Payroll from "./components/Payroll";
 import AccountingFinance from "./components/AccountingFinance";
+import NotFound from "./components/NotFound";
 import LeaveManagement from "./components/LeaveManagement";
 import ExitManagement from "./components/ExitManagement";
 import StuffManagement from "./components/StuffManagement";
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     Component: Layout,
+    errorElement: <NotFound />,
     children: [
       { index: true, Component: Dashboard },
       { path: "teachers", Component: TeacherProfile },
@@ -33,6 +35,7 @@ export const router = createBrowserRouter([
       { path: "settings/vacancies", Component: VacancyManagement },
       { path: "settings/:sectionKey", Component: SettingsSection },
       { path: "exit", Component: ExitManagement },
+      { path: "*", Component: NotFound },
     ],
   },
 ]);
