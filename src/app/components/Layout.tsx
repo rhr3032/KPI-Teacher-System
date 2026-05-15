@@ -6,9 +6,6 @@ import {
   Assessment,
   AttachMoney,
   EventNote,
-  Assignment,
-  Warning,
-  Schedule,
   ExitToApp,
   Inventory2,
   Menu,
@@ -22,13 +19,9 @@ export default function Layout() {
     { path: "/", label: "Dashboard", icon: <DashboardIcon /> },
     { path: "/teachers", label: "Teacher Profiles", icon: <People /> },
     { path: "/attendance", label: "Attendance", icon: <AccessTime /> },
-    { path: "/performance", label: "Performance (ACR)", icon: <Assessment /> },
     { path: "/payroll", label: "Payroll", icon: <AttachMoney /> },
     { path: "/leave", label: "Leave Management", icon: <EventNote /> },
-    { path: "/tasks", label: "Task Management", icon: <Assignment /> },
     { path: "/staff", label: "Staff", icon: <Inventory2 /> },
-    { path: "/discipline", label: "Discipline", icon: <Warning /> },
-    { path: "/shifts", label: "Shift Management", icon: <Schedule /> },
     { path: "/exit", label: "Exit Management", icon: <ExitToApp /> },
   ];
 

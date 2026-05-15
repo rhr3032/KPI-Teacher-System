@@ -4,12 +4,8 @@ import Dashboard from "./components/Dashboard";
 import TeacherProfile from "./components/TeacherProfile";
 import TeacherDetails from "./components/TeacherDetails";
 import Attendance from "./components/Attendance";
-import Performance from "./components/Performance";
 import Payroll from "./components/Payroll";
 import LeaveManagement from "./components/LeaveManagement";
-import TaskManagement from "./components/TaskManagement";
-import Discipline from "./components/Discipline";
-import ShiftManagement from "./components/ShiftManagement";
 import ExitManagement from "./components/ExitManagement";
 import StuffManagement from "./components/StuffManagement";
 
@@ -22,14 +18,10 @@ export const router = createBrowserRouter([
       { path: "teachers", Component: TeacherProfile },
       { path: "teachers/:teacherId", Component: TeacherDetails },
       { path: "attendance", Component: Attendance },
-      { path: "performance", Component: Performance },
       { path: "payroll", Component: Payroll },
       { path: "leave", Component: LeaveManagement },
-      { path: "tasks", Component: TaskManagement },
       { path: "staff", Component: StuffManagement },
       { path: "stuff", Component: StuffManagement },
-      { path: "discipline", Component: Discipline },
-      { path: "shifts", Component: ShiftManagement },
       { path: "exit", Component: ExitManagement },
     ],
   },
