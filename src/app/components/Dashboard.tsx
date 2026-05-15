@@ -7,8 +7,8 @@ import {
   TrendingDown,
 } from "@mui/icons-material";
 import { useMemo } from "react";
-import { BarChart, Bar, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { getTeachers, formatCurrency } from "../teacher-data";
+import { BarChart, Bar, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { getTeachers } from "../teacher-data";
 
 export default function Dashboard() {
   const teachers = useMemo(() => getTeachers(), []);
@@ -89,18 +89,6 @@ export default function Dashboard() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [teachers]);
 
-  const lineChartData = useMemo(
-    () =>
-      [...teachers]
-        .sort((left, right) => left.id - right.id)
-        .map((teacher) => ({
-          name: teacher.name.split(" ")[0],
-          attendanceRate: teacher.attendance.attendanceRate,
-          netSalary: teacher.salary.netSalary,
-        })),
-    [teachers],
-  );
-
   const pieColors = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
 
   return (
@@ -169,26 +157,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded-lg bg-white shadow xl:col-span-3">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h3 className="text-lg font-semibold text-gray-900">Teacher Trend Line</h3>
-            <p className="text-sm text-gray-600">Attendance, performance, and salary movement across the current teacher base.</p>
-          </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={lineChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fill: "#6b7280" }} />
-                <YAxis yAxisId="left" tick={{ fill: "#6b7280" }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fill: "#6b7280" }} tickFormatter={(value) => `$${Number(value) / 1000}k`} />
-                <Tooltip formatter={(value: number, name: string) => (name === "Net Salary" ? formatCurrency(value) : `${value}%`)} />
-                <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="attendanceRate" name="Attendance %" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} />
-                <Line yAxisId="right" type="monotone" dataKey="netSalary" name="Net Salary" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
     </div>
   );
