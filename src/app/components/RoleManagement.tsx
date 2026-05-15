@@ -10,13 +10,24 @@ import {
 } from "../system-config";
 import { settingsSections } from "../settings-meta";
 
+const systemFeatureOptions = [
+  "Dashboard",
+  "Teacher Profiles",
+  "Attendance",
+  "Payroll",
+  "Leave Management",
+  "Staff",
+  "Settings",
+  "Exit Management",
+];
+
 export default function RoleManagement() {
   const navigate = useNavigate();
   const { config, resetConfig } = useSystemConfig();
   const [editingRoleName, setEditingRoleName] = useState<string | null>(null);
   const [roleName, setRoleName] = useState("");
   const [roleDescription, setRoleDescription] = useState("");
-  const [featureDraft, setFeatureDraft] = useState("");
+  const [featureDraft, setFeatureDraft] = useState(systemFeatureOptions[0]);
   const [features, setFeatures] = useState<string[]>([]);
 
   const totalFeatures = useMemo(
@@ -28,7 +39,7 @@ export default function RoleManagement() {
     setEditingRoleName(null);
     setRoleName("");
     setRoleDescription("");
-    setFeatureDraft("");
+    setFeatureDraft(systemFeatureOptions[0]);
     setFeatures([]);
   };
 
@@ -36,7 +47,7 @@ export default function RoleManagement() {
     setEditingRoleName(role.name);
     setRoleName(role.name);
     setRoleDescription(role.description);
-    setFeatureDraft("");
+    setFeatureDraft(systemFeatureOptions[0]);
     setFeatures(role.features);
   };
 
@@ -48,7 +59,7 @@ export default function RoleManagement() {
     }
 
     setFeatures((current) => (current.includes(trimmedFeature) ? current : [...current, trimmedFeature]));
-    setFeatureDraft("");
+    setFeatureDraft(systemFeatureOptions[0]);
   };
 
   const removeFeature = (feature: string) => {
@@ -164,15 +175,21 @@ export default function RoleManagement() {
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-700">Custom Features</p>
+              <p className="text-sm font-medium text-gray-700">System Features</p>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="text"
+                <select
                   value={featureDraft}
                   onChange={(event) => setFeatureDraft(event.target.value)}
-                  placeholder="Add a feature"
+                  aria-label="Select system feature"
+                  title="Select system feature"
                   className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  {systemFeatureOptions.map((feature) => (
+                    <option key={feature} value={feature}>
+                      {feature}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={addFeature}

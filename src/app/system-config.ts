@@ -48,17 +48,17 @@ const defaultSystemConfig: SystemConfig = {
     {
       name: "Super Admin",
       description: "Full access to all modules and settings.",
-      features: ["Dashboard", "Teachers", "Staff", "Settings"],
+      features: ["Dashboard", "Teacher Profiles", "Staff", "Settings"],
     },
     {
       name: "HR Manager",
       description: "Manages people records and configuration.",
-      features: ["Teachers", "Staff", "Settings"],
+      features: ["Teacher Profiles", "Attendance", "Payroll", "Staff", "Settings"],
     },
     {
       name: "Department Head",
       description: "Reviews staff and teacher activity.",
-      features: ["Dashboard", "Teachers", "Staff"],
+      features: ["Dashboard", "Teacher Profiles", "Attendance", "Staff"],
     },
   ],
 };
