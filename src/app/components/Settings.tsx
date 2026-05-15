@@ -3,6 +3,7 @@ import {
   Apartment,
   ArrowForwardIos,
   Badge,
+  ManageAccounts,
   RestartAlt,
   School,
   Settings as SettingsIcon,
@@ -19,6 +20,7 @@ const sectionIcons = {
   shifts: <AccessTime />,
   designations: <Badge />,
   educationalQualifications: <School />,
+  roles: <ManageAccounts />,
 };
 
 export default function Settings() {
@@ -80,7 +82,7 @@ export default function Settings() {
           {settingsSections.map((section) => (
             <Link
               key={section.key}
-              to={`/settings/${section.key}`}
+              to={section.path}
               className="group rounded-2xl border border-gray-200 bg-gray-50 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-4">

@@ -5,12 +5,19 @@ export type SystemConfigKey =
   | "subjects"
   | "shifts"
   | "designations"
-  | "educationalQualifications";
+  | "educationalQualifications"
+  | "roles";
 
 export type ShiftOption = {
   name: string;
   startTime: string;
   endTime: string;
+};
+
+export type RoleOption = {
+  name: string;
+  description: string;
+  features: string[];
 };
 
 export type SystemConfig = {
@@ -19,9 +26,10 @@ export type SystemConfig = {
   shifts: ShiftOption[];
   designations: string[];
   educationalQualifications: string[];
+  roles: RoleOption[];
 };
 
-type StringConfigKey = Exclude<SystemConfigKey, "shifts">;
+type StringConfigKey = Exclude<SystemConfigKey, "shifts" | "roles">;
 
 const STORAGE_KEY = "hrms-system-config";
 const CONFIG_CHANGE_EVENT = "hrms-system-config-change";
@@ -36,6 +44,23 @@ const defaultSystemConfig: SystemConfig = {
   ],
   designations: ["Teacher", "Senior Teacher", "HR Officer", "Payroll Assistant", "Systems Support"],
   educationalQualifications: ["SSC", "HSC", "Diploma", "BSc", "MSc", "BA", "MA"],
+  roles: [
+    {
+      name: "Super Admin",
+      description: "Full access to all modules and settings.",
+      features: ["Dashboard", "Teachers", "Staff", "Settings"],
+    },
+    {
+      name: "HR Manager",
+      description: "Manages people records and configuration.",
+      features: ["Teachers", "Staff", "Settings"],
+    },
+    {
+      name: "Department Head",
+      description: "Reviews staff and teacher activity.",
+      features: ["Dashboard", "Teachers", "Staff"],
+    },
+  ],
 };
 
 function normalizeOptions(values: unknown, fallback: string[]) {
@@ -81,6 +106,39 @@ function normalizeShiftOption(value: unknown, fallback: ShiftOption): ShiftOptio
   return { name, startTime, endTime };
 }
 
+function normalizeFeatures(values: unknown, fallback: string[]) {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalized = values
+    .map((value) => String(value).trim())
+    .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
+
+  return normalized.length > 0 ? normalized : [...fallback];
+}
+
+function normalizeRoleOption(value: unknown, fallback: RoleOption): RoleOption | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const role = value as Partial<RoleOption>;
+  const name = String(role.name ?? "").trim();
+  const description = String(role.description ?? "").trim();
+  const features = normalizeFeatures(role.features, fallback.features);
+
+  if (!name) {
+    return null;
+  }
+
+  return {
+    name,
+    description,
+    features,
+  };
+}
+
 function normalizeShifts(values: unknown, fallback: ShiftOption[]) {
   if (!Array.isArray(values)) {
     return [...fallback];
@@ -89,6 +147,19 @@ function normalizeShifts(values: unknown, fallback: ShiftOption[]) {
   const normalized = values
     .map((value) => normalizeShiftOption(value, fallback[0] ?? defaultSystemConfig.shifts[0]))
     .filter((value): value is ShiftOption => Boolean(value))
+    .filter((value, index, array) => value.name.length > 0 && array.findIndex((entry) => entry.name === value.name) === index);
+
+  return normalized.length > 0 ? normalized : [...fallback];
+}
+
+function normalizeRoles(values: unknown, fallback: RoleOption[]) {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalized = values
+    .map((value) => normalizeRoleOption(value, fallback[0] ?? defaultSystemConfig.roles[0]))
+    .filter((value): value is RoleOption => Boolean(value))
     .filter((value, index, array) => value.name.length > 0 && array.findIndex((entry) => entry.name === value.name) === index);
 
   return normalized.length > 0 ? normalized : [...fallback];
@@ -106,6 +177,7 @@ function normalizeConfig(rawValue: unknown): SystemConfig {
       rawConfig.educationalQualifications,
       defaultSystemConfig.educationalQualifications,
     ),
+    roles: normalizeRoles(rawConfig.roles, defaultSystemConfig.roles),
   };
 }
 
@@ -195,6 +267,60 @@ export function removeShiftSystemConfigValue(name: string) {
   setSystemConfig({
     ...nextConfig,
     shifts: nextConfig.shifts.filter((entry) => entry.name !== name),
+  });
+}
+
+export function addRoleSystemConfigValue(role: RoleOption) {
+  const name = role.name.trim();
+  const description = role.description.trim();
+  const features = normalizeFeatures(role.features, []);
+
+  if (!name) {
+    return;
+  }
+
+  const nextConfig = getSystemConfig();
+  const nextValues = nextConfig.roles.some((entry) => entry.name === name)
+    ? nextConfig.roles
+    : [{ name, description, features }, ...nextConfig.roles];
+
+  setSystemConfig({
+    ...nextConfig,
+    roles: nextValues,
+  });
+}
+
+export function updateRoleSystemConfigValue(originalName: string, role: RoleOption) {
+  const name = role.name.trim();
+  const description = role.description.trim();
+  const features = normalizeFeatures(role.features, []);
+
+  if (!name) {
+    return;
+  }
+
+  const nextConfig = getSystemConfig();
+
+  setSystemConfig({
+    ...nextConfig,
+    roles: nextConfig.roles.map((entry) =>
+      entry.name === originalName
+        ? {
+            name,
+            description,
+            features,
+          }
+        : entry,
+    ),
+  });
+}
+
+export function removeRoleSystemConfigValue(name: string) {
+  const nextConfig = getSystemConfig();
+
+  setSystemConfig({
+    ...nextConfig,
+    roles: nextConfig.roles.filter((entry) => entry.name !== name),
   });
 }
 
