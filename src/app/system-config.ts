@@ -6,7 +6,8 @@ export type SystemConfigKey =
   | "shifts"
   | "designations"
   | "educationalQualifications"
-  | "roles";
+  | "roles"
+  | "vacancies";
 
 export type ShiftOption = {
   name: string;
@@ -20,6 +21,15 @@ export type RoleOption = {
   features: string[];
 };
 
+export type VacancyOption = {
+  name: string;
+  reason: string;
+  dateType: string;
+  startDate: string;
+  endDate: string;
+  signature: string;
+};
+
 export type SystemConfig = {
   departments: string[];
   subjects: string[];
@@ -27,9 +37,10 @@ export type SystemConfig = {
   designations: string[];
   educationalQualifications: string[];
   roles: RoleOption[];
+  vacancies: VacancyOption[];
 };
 
-type StringConfigKey = Exclude<SystemConfigKey, "shifts" | "roles">;
+type StringConfigKey = Exclude<SystemConfigKey, "shifts" | "roles" | "vacancies">;
 
 const STORAGE_KEY = "hrms-system-config";
 const CONFIG_CHANGE_EVENT = "hrms-system-config-change";
@@ -59,6 +70,24 @@ const defaultSystemConfig: SystemConfig = {
       name: "Department Head",
       description: "Reviews staff and teacher activity.",
       features: ["Dashboard", "Teacher Profiles", "Attendance", "Staff"],
+    },
+  ],
+  vacancies: [
+    {
+      name: "Summer Leave",
+      reason: "Personal vacation during school break.",
+      dateType: "Date Range",
+      startDate: "2026-06-10",
+      endDate: "2026-06-15",
+      signature: "Admin Office",
+    },
+    {
+      name: "One Day Permission",
+      reason: "Short personal leave.",
+      dateType: "Single Date",
+      startDate: "2026-05-20",
+      endDate: "2026-05-20",
+      signature: "HR Manager",
     },
   ],
 };
@@ -139,6 +168,33 @@ function normalizeRoleOption(value: unknown, fallback: RoleOption): RoleOption |
   };
 }
 
+function normalizeVacancyOption(value: unknown, fallback: VacancyOption): VacancyOption | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const vacancy = value as Partial<VacancyOption>;
+  const name = String(vacancy.name ?? "").trim();
+  const reason = String(vacancy.reason ?? "").trim();
+  const dateType = String(vacancy.dateType ?? "").trim() || fallback.dateType;
+  const startDate = String(vacancy.startDate ?? "").trim();
+  const endDate = String(vacancy.endDate ?? "").trim() || startDate;
+  const signature = String(vacancy.signature ?? "").trim();
+
+  if (!name || !reason || !startDate) {
+    return null;
+  }
+
+  return {
+    name,
+    reason,
+    dateType,
+    startDate,
+    endDate,
+    signature,
+  };
+}
+
 function normalizeShifts(values: unknown, fallback: ShiftOption[]) {
   if (!Array.isArray(values)) {
     return [...fallback];
@@ -165,6 +221,19 @@ function normalizeRoles(values: unknown, fallback: RoleOption[]) {
   return normalized.length > 0 ? normalized : [...fallback];
 }
 
+function normalizeVacancies(values: unknown, fallback: VacancyOption[]) {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalized = values
+    .map((value) => normalizeVacancyOption(value, fallback[0] ?? defaultSystemConfig.vacancies[0]))
+    .filter((value): value is VacancyOption => Boolean(value))
+    .filter((value, index, array) => value.name.length > 0 && array.findIndex((entry) => entry.name === value.name) === index);
+
+  return normalized.length > 0 ? normalized : [...fallback];
+}
+
 function normalizeConfig(rawValue: unknown): SystemConfig {
   const rawConfig = rawValue && typeof rawValue === "object" ? (rawValue as Partial<SystemConfig>) : {};
 
@@ -178,6 +247,7 @@ function normalizeConfig(rawValue: unknown): SystemConfig {
       defaultSystemConfig.educationalQualifications,
     ),
     roles: normalizeRoles(rawConfig.roles, defaultSystemConfig.roles),
+    vacancies: normalizeVacancies(rawConfig.vacancies, defaultSystemConfig.vacancies),
   };
 }
 
@@ -321,6 +391,69 @@ export function removeRoleSystemConfigValue(name: string) {
   setSystemConfig({
     ...nextConfig,
     roles: nextConfig.roles.filter((entry) => entry.name !== name),
+  });
+}
+
+export function addVacancySystemConfigValue(vacancy: VacancyOption) {
+  const name = vacancy.name.trim();
+  const reason = vacancy.reason.trim();
+  const dateType = vacancy.dateType.trim() || "Date Range";
+  const startDate = vacancy.startDate.trim();
+  const endDate = vacancy.endDate.trim() || startDate;
+  const signature = vacancy.signature.trim();
+
+  if (!name || !reason || !startDate) {
+    return;
+  }
+
+  const nextConfig = getSystemConfig();
+  const nextValues = nextConfig.vacancies.some((entry) => entry.name === name)
+    ? nextConfig.vacancies
+    : [{ name, reason, dateType, startDate, endDate, signature }, ...nextConfig.vacancies];
+
+  setSystemConfig({
+    ...nextConfig,
+    vacancies: nextValues,
+  });
+}
+
+export function updateVacancySystemConfigValue(originalName: string, vacancy: VacancyOption) {
+  const name = vacancy.name.trim();
+  const reason = vacancy.reason.trim();
+  const dateType = vacancy.dateType.trim() || "Date Range";
+  const startDate = vacancy.startDate.trim();
+  const endDate = vacancy.endDate.trim() || startDate;
+  const signature = vacancy.signature.trim();
+
+  if (!name || !reason || !startDate) {
+    return;
+  }
+
+  const nextConfig = getSystemConfig();
+
+  setSystemConfig({
+    ...nextConfig,
+    vacancies: nextConfig.vacancies.map((entry) =>
+      entry.name === originalName
+        ? {
+            name,
+            reason,
+            dateType,
+            startDate,
+            endDate,
+            signature,
+          }
+        : entry,
+    ),
+  });
+}
+
+export function removeVacancySystemConfigValue(name: string) {
+  const nextConfig = getSystemConfig();
+
+  setSystemConfig({
+    ...nextConfig,
+    vacancies: nextConfig.vacancies.filter((entry) => entry.name !== name),
   });
 }
 

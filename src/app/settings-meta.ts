@@ -51,6 +51,13 @@ export const settingsSections: SettingsSectionMeta[] = [
     placeholder: "Add a role",
     path: "/settings/roles",
   },
+  {
+    key: "vacancies",
+    title: "Vacancy Management",
+    description: "Create vacation or vacancy entries with date ranges.",
+    placeholder: "Add a vacancy",
+    path: "/settings/vacancies",
+  },
 ];
 
 export function getSettingsSectionMeta(sectionKey: string) {

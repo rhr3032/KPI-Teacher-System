@@ -11,6 +11,7 @@ import StuffManagement from "./components/StuffManagement";
 import Settings from "./components/Settings";
 import SettingsSection from "./components/SettingsSection";
 import RoleManagement from "./components/RoleManagement";
+import VacancyManagement from "./components/VacancyManagement";
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
       { path: "stuff", Component: StuffManagement },
       { path: "settings", Component: Settings },
       { path: "settings/roles", Component: RoleManagement },
+      { path: "settings/vacancies", Component: VacancyManagement },
       { path: "settings/:sectionKey", Component: SettingsSection },
       { path: "exit", Component: ExitManagement },
     ],

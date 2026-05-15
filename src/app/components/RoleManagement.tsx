@@ -17,6 +17,7 @@ const systemFeatureOptions = [
   "Payroll",
   "Leave Management",
   "Staff",
+  "Vacancy Management",
   "Settings",
   "Exit Management",
 ];

@@ -4,6 +4,7 @@ import {
   ArrowForwardIos,
   Badge,
   ManageAccounts,
+  EventNote,
   RestartAlt,
   School,
   Settings as SettingsIcon,
@@ -21,6 +22,7 @@ const sectionIcons = {
   designations: <Badge />,
   educationalQualifications: <School />,
   roles: <ManageAccounts />,
+  vacancies: <EventNote />,
 };
 
 export default function Settings() {
