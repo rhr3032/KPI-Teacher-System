@@ -28,6 +28,8 @@ export default function RoleManagement() {
   const [editingRoleName, setEditingRoleName] = useState<string | null>(null);
   const [roleName, setRoleName] = useState("");
   const [roleDescription, setRoleDescription] = useState("");
+  const [roleEmail, setRoleEmail] = useState("");
+  const [rolePassword, setRolePassword] = useState("");
   const [featureDraft, setFeatureDraft] = useState(systemFeatureOptions[0]);
   const [features, setFeatures] = useState<string[]>([]);
 
@@ -40,6 +42,8 @@ export default function RoleManagement() {
     setEditingRoleName(null);
     setRoleName("");
     setRoleDescription("");
+    setRoleEmail("");
+    setRolePassword("");
     setFeatureDraft(systemFeatureOptions[0]);
     setFeatures([]);
   };
@@ -48,6 +52,8 @@ export default function RoleManagement() {
     setEditingRoleName(role.name);
     setRoleName(role.name);
     setRoleDescription(role.description);
+    setRoleEmail(role.email ?? "");
+    setRolePassword(role.password ?? "");
     setFeatureDraft(systemFeatureOptions[0]);
     setFeatures(role.features);
   };
@@ -71,6 +77,8 @@ export default function RoleManagement() {
     const payload: RoleOption = {
       name: roleName,
       description: roleDescription,
+      email: roleEmail || undefined,
+      password: rolePassword || undefined,
       features,
     };
 
@@ -163,13 +171,23 @@ export default function RoleManagement() {
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
                 />
               </label>
-              <label className="space-y-2 text-sm font-medium text-gray-700 sm:col-span-2">
-                <span>Description</span>
-                <textarea
-                  value={roleDescription}
-                  onChange={(event) => setRoleDescription(event.target.value)}
-                  placeholder="Describe this role"
-                  rows={3}
+              <label className="space-y-2 text-sm font-medium text-gray-700">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={roleEmail}
+                  onChange={(event) => setRoleEmail(event.target.value)}
+                  placeholder="role@example.com"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                />
+              </label>
+              <label className="space-y-2 text-sm font-medium text-gray-700">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={rolePassword}
+                  onChange={(event) => setRolePassword(event.target.value)}
+                  placeholder="Enter password"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
                 />
               </label>

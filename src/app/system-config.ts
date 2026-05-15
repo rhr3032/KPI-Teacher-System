@@ -20,6 +20,8 @@ export type RoleOption = {
   name: string;
   description: string;
   features: string[];
+  email?: string;
+  password?: string;
 };
 
 export type VacancyOption = {
@@ -158,6 +160,8 @@ function normalizeRoleOption(value: unknown, fallback: RoleOption): RoleOption |
   const role = value as Partial<RoleOption>;
   const name = String(role.name ?? "").trim();
   const description = String(role.description ?? "").trim();
+  const email = String(role.email ?? "").trim();
+  const password = String(role.password ?? "").trim();
   const features = normalizeFeatures(role.features, fallback.features);
 
   if (!name) {
@@ -167,6 +171,8 @@ function normalizeRoleOption(value: unknown, fallback: RoleOption): RoleOption |
   return {
     name,
     description,
+    email,
+    password,
     features,
   };
 }
