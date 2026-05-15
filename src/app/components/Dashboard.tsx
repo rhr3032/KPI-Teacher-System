@@ -90,6 +90,24 @@ export default function Dashboard() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [teachers]);
 
+  const teacherDepartmentPieData = useMemo(() => {
+    const counts = teachers.reduce<Record<string, number>>((acc, teacher) => {
+      acc[teacher.department] = (acc[teacher.department] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [teachers]);
+
+  const staffDepartmentPieData = useMemo(() => {
+    const counts = staffAttendanceSnapshot.reduce<Record<string, number>>((acc, staff) => {
+      acc[staff.department] = (acc[staff.department] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [staffAttendanceSnapshot]);
+
   const pieColors = ["#2563eb", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
   const showTeacherAttendance = attendanceFilter === "all" || attendanceFilter === "teacher";
   const showStaffAttendance = attendanceFilter === "all" || attendanceFilter === "staff";
@@ -168,6 +186,48 @@ export default function Dashboard() {
               <PieChart>
                 <Pie data={typeData} dataKey="value" nameKey="name" outerRadius={100} innerRadius={60} paddingAngle={4}>
                   {typeData.map((entry, index) => (
+                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div className="rounded-lg bg-white shadow">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <h3 className="text-lg font-semibold text-gray-900">Department Wise Teachers</h3>
+            <p className="text-sm text-gray-600">Teacher count across departments.</p>
+          </div>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie data={teacherDepartmentPieData} dataKey="value" nameKey="name" outerRadius={110} innerRadius={65} paddingAngle={4}>
+                  {teacherDepartmentPieData.map((entry, index) => (
+                    <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-white shadow">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <h3 className="text-lg font-semibold text-gray-900">Department Wise Staff</h3>
+            <p className="text-sm text-gray-600">Staff count across departments.</p>
+          </div>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie data={staffDepartmentPieData} dataKey="value" nameKey="name" outerRadius={110} innerRadius={65} paddingAngle={4}>
+                  {staffDepartmentPieData.map((entry, index) => (
                     <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
                   ))}
                 </Pie>
