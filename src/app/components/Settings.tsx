@@ -1,86 +1,28 @@
-import { Add, DeleteOutline, RestartAlt, Settings as SettingsIcon, Tune } from "@mui/icons-material";
-import { useState } from "react";
 import {
-  addShiftSystemConfigValue,
-  addSystemConfigValue,
-  removeSystemConfigValue,
-  removeShiftSystemConfigValue,
-  useSystemConfig,
-  type SystemConfigKey,
-} from "../system-config";
+  AccessTime,
+  Apartment,
+  ArrowForwardIos,
+  Badge,
+  RestartAlt,
+  School,
+  Settings as SettingsIcon,
+  Subject,
+  Tune,
+} from "@mui/icons-material";
+import { Link } from "react-router";
+import { useSystemConfig } from "../system-config";
+import { settingsSections } from "../settings-meta";
 
-type Section = {
-  key: SystemConfigKey;
-  title: string;
-  description: string;
-  placeholder: string;
+const sectionIcons = {
+  departments: <Apartment />,
+  subjects: <Subject />,
+  shifts: <AccessTime />,
+  designations: <Badge />,
+  educationalQualifications: <School />,
 };
-
-type ShiftDraft = {
-  name: string;
-  startTime: string;
-  endTime: string;
-};
-
-const sections: Section[] = [
-  {
-    key: "departments",
-    title: "Departments",
-    description: "Used when adding teachers and staff.",
-    placeholder: "Add a department",
-  },
-  {
-    key: "subjects",
-    title: "Subjects",
-    description: "Used in the teacher profile form.",
-    placeholder: "Add a subject",
-  },
-  {
-    key: "shifts",
-    title: "Shifts",
-    description: "Used in teacher and staff forms.",
-    placeholder: "Add a shift name",
-  },
-  {
-    key: "designations",
-    title: "Designations",
-    description: "Used for staff and promotion options.",
-    placeholder: "Add a designation",
-  },
-  {
-    key: "educationalQualifications",
-    title: "Educational Qualifications",
-    description: "Used for staff and teacher qualification fields.",
-    placeholder: "Add a qualification",
-  },
-];
 
 export default function Settings() {
-  const { config, addConfigValue, removeConfigValue, resetConfig } = useSystemConfig();
-  const [drafts, setDrafts] = useState<Record<SystemConfigKey, string>>({
-    departments: "",
-    subjects: "",
-    shifts: "",
-    designations: "",
-    educationalQualifications: "",
-  });
-  const [shiftDraft, setShiftDraft] = useState<ShiftDraft>({
-    name: "",
-    startTime: "08:00",
-    endTime: "14:00",
-  });
-
-  const handleAdd = (key: SystemConfigKey) => {
-    if (key === "shifts") {
-      addShiftSystemConfigValue(shiftDraft);
-      setShiftDraft({ name: "", startTime: "08:00", endTime: "14:00" });
-      return;
-    }
-
-    addConfigValue(key, drafts[key]);
-    setDrafts((current) => ({ ...current, [key]: "" }));
-  };
-
+  const { config, resetConfig } = useSystemConfig();
   const totalOptions = Object.values(config).reduce((sum, list) => sum + list.length, 0);
 
   return (
@@ -93,7 +35,7 @@ export default function Settings() {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-              <p className="text-gray-600 mt-1">Manage the dropdown options used across teacher and staff forms.</p>
+              <p className="text-gray-600 mt-1">Choose a settings app to customize dropdown values.</p>
             </div>
           </div>
         </div>
@@ -110,7 +52,7 @@ export default function Settings() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-lg bg-white shadow p-5">
           <p className="text-sm text-gray-600">Total Option Groups</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{sections.length}</p>
+          <p className="mt-2 text-2xl font-bold text-gray-900">{settingsSections.length}</p>
         </div>
         <div className="rounded-lg bg-white shadow p-5">
           <p className="text-sm text-gray-600">Total Dropdown Values</p>
@@ -122,105 +64,40 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {sections.map((section) => (
-          <section key={section.key} className="rounded-lg bg-white shadow">
-            <div className="border-b border-gray-200 px-6 py-4 flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">{section.description}</p>
-              </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                <Tune fontSize="small" />
-                {config[section.key].length}
-              </span>
-            </div>
+      <div className="rounded-2xl bg-white shadow p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-4 mb-5">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Apps</h3>
+            <p className="text-sm text-gray-600">Open any app to customize its options.</p>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            <Tune fontSize="small" />
+            Menu
+          </span>
+        </div>
 
-            <div className="p-6 space-y-4">
-              {section.key === "shifts" ? (
-                <div className="grid gap-3 sm:grid-cols-[1.2fr_1fr_1fr_auto]">
-                  <input
-                    type="text"
-                    value={shiftDraft.name}
-                    onChange={(event) => setShiftDraft((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Shift name"
-                    className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="time"
-                    value={shiftDraft.startTime}
-                    onChange={(event) => setShiftDraft((current) => ({ ...current, startTime: event.target.value }))}
-                    placeholder="Start time"
-                    className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="time"
-                    value={shiftDraft.endTime}
-                    onChange={(event) => setShiftDraft((current) => ({ ...current, endTime: event.target.value }))}
-                    placeholder="End time"
-                    className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleAdd(section.key)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                  >
-                    <Add />
-                    Add
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <input
-                    type="text"
-                    value={drafts[section.key]}
-                    onChange={(event) => setDrafts((current) => ({ ...current, [section.key]: event.target.value }))}
-                    placeholder={section.placeholder}
-                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleAdd(section.key)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                  >
-                    <Add />
-                    Add
-                  </button>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                {section.key === "shifts"
-                  ? config.shifts.map((shift) => (
-                      <button
-                        key={shift.name}
-                        type="button"
-                        onClick={() => removeShiftSystemConfigValue(shift.name)}
-                        className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                        title="Remove shift"
-                      >
-                        <span>
-                          {shift.name} {shift.startTime} - {shift.endTime}
-                        </span>
-                        <DeleteOutline fontSize="small" />
-                      </button>
-                    ))
-                  : config[section.key].map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => removeConfigValue(section.key, value)}
-                        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                        title="Remove option"
-                      >
-                        {value}
-                        <DeleteOutline fontSize="small" />
-                      </button>
-                    ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+          {settingsSections.map((section) => (
+            <Link
+              key={section.key}
+              to={`/settings/${section.key}`}
+              className="group rounded-2xl border border-gray-200 bg-gray-50 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="rounded-xl bg-white p-3 text-blue-600 shadow-sm">{sectionIcons[section.key]}</div>
+                <span className="text-xs font-semibold text-gray-500">{config[section.key].length} items</span>
               </div>
-            </div>
-          </section>
-        ))}
+              <div className="mt-4">
+                <h4 className="text-base font-semibold text-gray-900">{section.title}</h4>
+                <p className="mt-1 text-sm text-gray-600">{section.description}</p>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-sm font-medium text-blue-700">
+                <span>Open</span>
+                <ArrowForwardIos fontSize="inherit" />
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import LeaveManagement from "./components/LeaveManagement";
 import ExitManagement from "./components/ExitManagement";
 import StuffManagement from "./components/StuffManagement";
 import Settings from "./components/Settings";
+import SettingsSection from "./components/SettingsSection";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "staff", Component: StuffManagement },
       { path: "stuff", Component: StuffManagement },
       { path: "settings", Component: Settings },
+      { path: "settings/:sectionKey", Component: SettingsSection },
       { path: "exit", Component: ExitManagement },
     ],
   },
