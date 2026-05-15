@@ -4,6 +4,7 @@ import {
   ArrowForwardIos,
   Badge,
   ManageAccounts,
+  LocalHospital,
   EventNote,
   RestartAlt,
   School,
@@ -23,6 +24,7 @@ const sectionIcons = {
   educationalQualifications: <School />,
   roles: <ManageAccounts />,
   vacancies: <EventNote />,
+  leaveTypes: <LocalHospital />,
 };
 
 export default function Settings() {

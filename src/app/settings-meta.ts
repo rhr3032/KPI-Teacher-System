@@ -58,6 +58,13 @@ export const settingsSections: SettingsSectionMeta[] = [
     placeholder: "Add a vacancy",
     path: "/settings/vacancies",
   },
+  {
+    key: "leaveTypes",
+    title: "Leave Types",
+    description: "Define leave types used when creating leave requests.",
+    placeholder: "Add a leave type",
+    path: "/settings/leaveTypes",
+  },
 ];
 
 export function getSettingsSectionMeta(sectionKey: string) {

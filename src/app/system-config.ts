@@ -4,6 +4,7 @@ export type SystemConfigKey =
   | "departments"
   | "subjects"
   | "shifts"
+  | "leaveTypes"
   | "designations"
   | "educationalQualifications"
   | "roles"
@@ -34,6 +35,7 @@ export type SystemConfig = {
   departments: string[];
   subjects: string[];
   shifts: ShiftOption[];
+  leaveTypes: string[];
   designations: string[];
   educationalQualifications: string[];
   roles: RoleOption[];
@@ -53,6 +55,7 @@ const defaultSystemConfig: SystemConfig = {
     { name: "Day", startTime: "09:00", endTime: "17:00" },
     { name: "Evening", startTime: "14:00", endTime: "20:00" },
   ],
+  leaveTypes: ["Sick Leave", "Casual Leave", "Maternity Leave", "Bereavement Leave", "Unpaid Leave"],
   designations: ["Teacher", "Senior Teacher", "HR Officer", "Payroll Assistant", "Systems Support"],
   educationalQualifications: ["SSC", "HSC", "Diploma", "BSc", "MSc", "BA", "MA"],
   roles: [
@@ -241,6 +244,7 @@ function normalizeConfig(rawValue: unknown): SystemConfig {
     departments: normalizeOptions(rawConfig.departments, defaultSystemConfig.departments),
     subjects: normalizeOptions(rawConfig.subjects, defaultSystemConfig.subjects),
     shifts: normalizeShifts(rawConfig.shifts, defaultSystemConfig.shifts),
+      leaveTypes: normalizeOptions(rawConfig.leaveTypes, defaultSystemConfig.leaveTypes),
     designations: normalizeOptions(rawConfig.designations, defaultSystemConfig.designations),
     educationalQualifications: normalizeOptions(
       rawConfig.educationalQualifications,
@@ -479,12 +483,12 @@ export function useSystemConfig() {
     refreshConfig();
   };
 
-  const addConfigValue = (key: SystemConfigKey, value: string) => {
+  const addConfigValue = (key: StringConfigKey, value: string) => {
     addSystemConfigValue(key, value);
     refreshConfig();
   };
 
-  const removeConfigValue = (key: SystemConfigKey, value: string) => {
+  const removeConfigValue = (key: StringConfigKey, value: string) => {
     removeSystemConfigValue(key, value);
     refreshConfig();
   };
