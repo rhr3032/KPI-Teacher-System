@@ -51,10 +51,21 @@ function sampleStaffExpenses(): StaffExpense[] {
 
 export default function AccountingFinance() {
   const [selectedMonth, setSelectedMonth] = useState("2026-05");
+  const [filterType, setFilterType] = useState<"all" | "teachers" | "staff">("all");
   const payroll = useMemo(() => samplePayroll(), []);
   const staff = useMemo(() => sampleStaffExpenses(), []);
 
   const payrollForMonth = useMemo(() => payroll.filter((p) => p.month === selectedMonth), [payroll, selectedMonth]);
+
+  const filteredPayroll = useMemo(
+    () => (filterType === "all" || filterType === "teachers" ? payrollForMonth : []),
+    [filterType, payrollForMonth],
+  );
+
+  const filteredStaff = useMemo(
+    () => (filterType === "all" || filterType === "staff" ? staff : []),
+    [filterType, staff],
+  );
 
   const payrollTotals = useMemo(() => {
     return payrollForMonth.reduce(
@@ -104,6 +115,20 @@ export default function AccountingFinance() {
         </div>
         <div className="flex items-center gap-3">
           <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg" />
+
+          <label className="text-sm">
+            <span className="sr-only">Filter</span>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as "all" | "teachers" | "staff")}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+            >
+              <option value="all">All</option>
+              <option value="teachers">Teachers</option>
+              <option value="staff">Staff</option>
+            </select>
+          </label>
+
           <button onClick={exportCsv} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
             <Download /> Export CSV
           </button>
@@ -128,7 +153,7 @@ export default function AccountingFinance() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Expense Breakdown</h3>
-          <p className="text-sm text-gray-500">{payrollForMonth.length} teacher(s) • {staff.length} staff</p>
+          <p className="text-sm text-gray-500">{filteredPayroll.length} teacher(s) • {filteredStaff.length} staff</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -143,7 +168,7 @@ export default function AccountingFinance() {
               </tr>
             </thead>
             <tbody>
-              {payrollForMonth.map((p) => {
+              {filteredPayroll.map((p) => {
                 const s = computeNetForPayroll(p);
                 return (
                   <tr key={`t-${p.id}`} className="border-b border-gray-100 hover:bg-gray-50">
@@ -156,7 +181,7 @@ export default function AccountingFinance() {
                 );
               })}
 
-              {staff.map((st) => (
+              {filteredStaff.map((st) => (
                 <tr key={`s-${st.id}`} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-4">Staff Salary</td>
                   <td className="py-3 px-4 font-medium text-gray-900">{st.name}</td>
