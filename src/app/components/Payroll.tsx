@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { AttachMoney, CheckCircle, Download, Visibility } from "@mui/icons-material";
+import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
 
 type PayrollStatus = "Paid" | "Pending";
 type AdvanceRequestStatus = "Pending" | "Paid" | "Rejected";
@@ -158,29 +159,13 @@ export default function Payroll() {
   const [payrollData, setPayrollData] = useState<PayrollRecord[]>(createSamplePayrollData);
   const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>(createSampleAdvanceRequests);
   const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(null);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<number>(3);
-  const [advanceAmount, setAdvanceAmount] = useState("1000");
-  const [advanceReason, setAdvanceReason] = useState("Monthly advance request");
   const [formError, setFormError] = useState("");
+  const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
 
   const visibleRecords = useMemo(
     () => payrollData.filter((record) => record.month === selectedMonth),
     [payrollData, selectedMonth],
   );
-
-  const selectedTeacher = useMemo(
-    () => payrollData.find((record) => record.id === selectedTeacherId) ?? payrollData[0] ?? null,
-    [payrollData, selectedTeacherId],
-  );
-
-  const availableAdvanceLimit = useMemo(() => {
-    if (!selectedTeacher) {
-      return 0;
-    }
-
-    const monthlyLimit = Math.floor(selectedTeacher.baseSalary * 0.4);
-    return Math.max(monthlyLimit - selectedTeacher.advanceBalance, 0);
-  }, [selectedTeacher]);
 
   const summaryStats = useMemo(() => {
     const totals = visibleRecords.reduce(
@@ -228,59 +213,48 @@ export default function Payroll() {
     );
   };
 
-  const payAllPendingSalaries = () => {
-    setPayrollData((current) =>
-      current.map((record) => {
-        if (record.month !== selectedMonth || record.status === "Paid") {
-          return record;
-        }
-
-        const snapshot = computeSalary(record);
-        return {
-          ...record,
-          status: "Paid",
-          paidAmount: snapshot.netSalary,
-          advanceRecovered: snapshot.advanceRecovery,
-          advanceBalance: Math.max(record.advanceBalance - snapshot.advanceRecovery, 0),
-          paidOn: new Date().toISOString().slice(0, 10),
-        };
-      }),
-    );
+  const openAdvanceSalaryDialog = () => {
+    setFormError("");
+    setAdvanceDialogOpen(true);
   };
 
-  const submitAdvanceRequest = () => {
-    const amount = Number(advanceAmount);
+  const submitAdvanceRequest = (values: ActionDialogValues) => {
+    const teacherId = Number(values.selectedTeacherId ?? "");
+    const amount = Number(values.advanceAmount ?? "");
+    const reason = String(values.advanceReason ?? "");
+    const teacher = payrollData.find((record) => record.id === teacherId);
 
-    if (!selectedTeacher) {
+    if (!teacher) {
       setFormError("Select a teacher first.");
-      return;
+      return false;
     }
 
     if (!Number.isFinite(amount) || amount <= 0) {
       setFormError("Enter a valid advance amount.");
-      return;
+      return false;
     }
 
+    const availableAdvanceLimit = Math.max(Math.floor(teacher.baseSalary * 0.4) - teacher.advanceBalance, 0);
     if (amount > availableAdvanceLimit) {
       setFormError(`Advance limit exceeded. Available limit is ${formatCurrency(availableAdvanceLimit)}.`);
-      return;
+      return false;
     }
 
     setFormError("");
     setAdvanceRequests((current) => [
       {
         id: Date.now(),
-        teacherId: selectedTeacher.id,
-        teacherName: selectedTeacher.name,
+        teacherId: teacher.id,
+        teacherName: teacher.name,
         amount,
-        reason: advanceReason.trim() || "Monthly advance request",
+        reason: reason.trim() || "Monthly advance request",
         requestedAt: new Date().toISOString().slice(0, 10),
         status: "Pending",
       },
       ...current,
     ]);
-    setAdvanceAmount("");
-    setAdvanceReason("Monthly advance request");
+    setAdvanceDialogOpen(false);
+    return true;
   };
 
   const approveAndPayAdvance = (requestId: number) => {
@@ -352,19 +326,24 @@ export default function Payroll() {
           <p className="text-sm text-gray-600 mt-1">Admin pays salary, teachers request advances, and advances are recovered from future payroll.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(event) => setSelectedMonth(event.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <span>Month</span>
+            <input
+              type="text"
+              value={selectedMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="YYYY-MM"
+              aria-label="Payroll month"
+            />
+          </label>
           <button
             type="button"
-            onClick={payAllPendingSalaries}
+            onClick={openAdvanceSalaryDialog}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
             <AttachMoney />
-            Pay All Pending
+            Advance Salary
           </button>
         </div>
       </div>
@@ -392,111 +371,8 @@ export default function Payroll() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-1 bg-white rounded-lg shadow p-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Teacher Advance Request</h3>
-            <p className="text-sm text-gray-600">A teacher requests an advance; admin approves and pays it, then the amount is recovered from the next salary run.</p>
-          </div>
-          <label className="space-y-2 block text-sm font-medium text-gray-700">
-            <span>Teacher</span>
-            <select
-              value={selectedTeacherId}
-              onChange={(event) => setSelectedTeacherId(Number(event.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              {payrollData.map((record) => (
-                <option key={record.id} value={record.id}>
-                  {record.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-2 block text-sm font-medium text-gray-700">
-            <span>Advance Amount</span>
-            <input
-              type="number"
-              min="1"
-              value={advanceAmount}
-              onChange={(event) => setAdvanceAmount(event.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter requested advance"
-            />
-          </label>
-          <label className="space-y-2 block text-sm font-medium text-gray-700">
-            <span>Reason</span>
-            <textarea
-              value={advanceReason}
-              onChange={(event) => setAdvanceReason(event.target.value)}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Why is the advance needed?"
-            />
-          </label>
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
-            <p className="font-semibold">Available limit</p>
-            <p>{selectedTeacher ? `${formatCurrency(availableAdvanceLimit)} for ${selectedTeacher.name}` : "-"}</p>
-            <p className="mt-1 text-xs text-blue-700">Calculated as 40% of monthly base salary minus current advance balance.</p>
-          </div>
-          {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
-          <button
-            type="button"
-            onClick={submitAdvanceRequest}
-            className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
-          >
-            <AttachMoney />
-            Submit Advance Request
-          </button>
-
-          <div className="border-t border-gray-200 pt-4 space-y-3">
-            <h4 className="font-semibold text-gray-900">Advance Requests</h4>
-            {advanceRequests.map((request) => (
-              <div key={request.id} className="rounded-lg border border-gray-200 p-4 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-gray-900">{request.teacherName}</p>
-                    <p className="text-xs text-gray-500">{request.reason}</p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      request.status === "Paid"
-                        ? "bg-green-100 text-green-700"
-                        : request.status === "Rejected"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {request.status}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-700 flex items-center justify-between">
-                  <span>{formatCurrency(request.amount)}</span>
-                  <span>{formatDateLabel(request.requestedAt)}</span>
-                </div>
-                {request.status === "Pending" ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => approveAndPayAdvance(request.id)}
-                      className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                    >
-                      Approve & Pay
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => rejectAdvance(request.id)}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="xl:col-span-2 bg-white rounded-lg shadow">
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Payroll Details - {selectedMonth}</h3>
           </div>
@@ -597,6 +473,88 @@ export default function Payroll() {
           </p>
         </div>
       )}
+
+      <div className="bg-white rounded-lg shadow p-6 space-y-3">
+        <h4 className="font-semibold text-gray-900">Advance Requests</h4>
+        {advanceRequests.map((request) => (
+          <div key={request.id} className="rounded-lg border border-gray-200 p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="font-medium text-gray-900">{request.teacherName}</p>
+                <p className="text-xs text-gray-500">{request.reason}</p>
+              </div>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  request.status === "Paid"
+                    ? "bg-green-100 text-green-700"
+                    : request.status === "Rejected"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                {request.status}
+              </span>
+            </div>
+            <div className="text-sm text-gray-700 flex items-center justify-between">
+              <span>{formatCurrency(request.amount)}</span>
+              <span>{formatDateLabel(request.requestedAt)}</span>
+            </div>
+            {request.status === "Pending" ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => approveAndPayAdvance(request.id)}
+                  className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Approve & Pay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => rejectAdvance(request.id)}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Reject
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      <ActionDialog
+        open={advanceDialogOpen}
+        onOpenChange={setAdvanceDialogOpen}
+        title="Advance Salary"
+        description="Create a new advance salary request from the payroll screen."
+        submitLabel="Submit Advance"
+        initialValues={{
+          selectedTeacherId: String(payrollData[0]?.id ?? ""),
+          advanceAmount: "1000",
+          advanceReason: "Monthly advance request",
+        }}
+        fields={[
+          {
+            name: "selectedTeacherId",
+            label: "Teacher",
+            type: "select",
+            options: payrollData.map((record) => ({ label: record.name, value: String(record.id) })),
+          },
+          {
+            name: "advanceAmount",
+            label: "Advance Amount",
+            type: "number",
+            placeholder: "Enter requested advance",
+          },
+          {
+            name: "advanceReason",
+            label: "Reason",
+            type: "textarea",
+            placeholder: "Why is the advance needed?",
+            rows: 4,
+          },
+        ]}
+        onSubmit={submitAdvanceRequest}
+      />
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <h4 className="font-semibold text-gray-900 mb-2">Salary Logic</h4>

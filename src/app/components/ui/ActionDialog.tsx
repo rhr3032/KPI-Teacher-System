@@ -37,7 +37,7 @@ type ActionDialogProps = {
   submitLabel: string;
   fields: ActionField[];
   initialValues: ActionDialogValues;
-  onSubmit: (values: ActionDialogValues) => void;
+  onSubmit: (values: ActionDialogValues) => void | boolean;
 };
 
 export function ActionDialog({
@@ -64,8 +64,10 @@ export function ActionDialog({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSubmit(values);
-    onOpenChange(false);
+    const shouldClose = onSubmit(values);
+    if (shouldClose !== false) {
+      onOpenChange(false);
+    }
   };
 
   return (
