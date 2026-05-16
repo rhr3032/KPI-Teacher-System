@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AttachMoney, CheckCircle, Download, Visibility } from "@mui/icons-material";
+import { AttachMoney, CheckCircle, Download, ReceiptLong, Visibility } from "@mui/icons-material";
 import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
 
 type PayrollStatus = "Paid" | "Pending";
@@ -64,6 +64,11 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-_]/g, "");
+}
+
+function generateInvoiceNumber(prefix: string, id: number) {
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `${prefix}-${datePart}-${String(id).padStart(4, "0")}`;
 }
 
 function computeSalary(record: PayrollRecord): SalarySnapshot {
@@ -289,10 +294,15 @@ export default function Payroll() {
     );
   };
 
-  const downloadSlip = (record: PayrollRecord) => {
+  const downloadSalaryInvoice = (record: PayrollRecord) => {
     const snapshot = computeSalary(record);
+    const invoiceNumber = generateInvoiceNumber("SAL", record.id);
+    const invoiceDate = new Date().toISOString().slice(0, 10);
     const csv = [
       ["Field", "Value"],
+      ["Invoice Number", invoiceNumber],
+      ["Invoice Date", invoiceDate],
+      ["Invoice Type", "Salary Payment"],
       ["Teacher", record.name],
       ["Month", record.month],
       ["Base Salary", record.baseSalary.toString()],
@@ -312,7 +322,34 @@ export default function Payroll() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `${slugify(record.name)}-${record.month}-salary-slip.csv`;
+    anchor.download = `${slugify(record.name)}-${record.month}-salary-invoice.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadAdvanceInvoice = (request: AdvanceRequest) => {
+    const invoiceNumber = generateInvoiceNumber("ADV", request.id);
+    const invoiceDate = new Date().toISOString().slice(0, 10);
+    const csv = [
+      ["Field", "Value"],
+      ["Invoice Number", invoiceNumber],
+      ["Invoice Date", invoiceDate],
+      ["Invoice Type", "Advance Salary Payment"],
+      ["Teacher", request.teacherName],
+      ["Requested Amount", request.amount.toString()],
+      ["Requested On", request.requestedAt],
+      ["Paid On", request.paidAt ?? "-"],
+      ["Status", request.status],
+      ["Reason", request.reason],
+    ]
+      .map((row) => row.map((value) => `"${value}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${slugify(request.teacherName)}-${request.requestedAt}-advance-invoice.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -431,11 +468,11 @@ export default function Payroll() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => downloadSlip(record)}
+                              onClick={() => downloadSalaryInvoice(record)}
                               className="p-2 text-green-600 hover:bg-green-50 rounded"
-                              title="Download salary slip"
+                              title="Download salary invoice"
                             >
-                              <Download fontSize="small" />
+                              <ReceiptLong fontSize="small" />
                             </button>
                             <button
                               type="button"
@@ -482,17 +519,29 @@ export default function Payroll() {
                 <p className="font-medium text-gray-900">{request.teacherName}</p>
                 <p className="text-xs text-gray-500">{request.reason}</p>
               </div>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  request.status === "Paid"
-                    ? "bg-green-100 text-green-700"
-                    : request.status === "Rejected"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {request.status}
-              </span>
+              <div className="flex items-center gap-2">
+                {request.status === "Paid" ? (
+                  <button
+                    type="button"
+                    onClick={() => downloadAdvanceInvoice(request)}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded"
+                    title="Download advance invoice"
+                  >
+                    <Download fontSize="small" />
+                  </button>
+                ) : null}
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    request.status === "Paid"
+                      ? "bg-green-100 text-green-700"
+                      : request.status === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {request.status}
+                </span>
+              </div>
             </div>
             <div className="text-sm text-gray-700 flex items-center justify-between">
               <span>{formatCurrency(request.amount)}</span>
