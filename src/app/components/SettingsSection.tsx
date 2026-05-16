@@ -9,6 +9,7 @@ import {
   useSystemConfig,
 } from "../system-config";
 import { getSettingsSectionMeta, settingsSections } from "../settings-meta";
+import { getTeachers } from "../teacher-data";
 
 export default function SettingsSection() {
   const navigate = useNavigate();
@@ -17,7 +18,17 @@ export default function SettingsSection() {
   const section = sectionKey ? getSettingsSectionMeta(sectionKey) : undefined;
   const [draft, setDraft] = useState("");
   const [shiftDraft, setShiftDraft] = useState({ name: "", startTime: "08:00", endTime: "14:00" });
-  const [overtimeDraft, setOvertimeDraft] = useState({ teacherName: "", hourlyRate: "400" });
+  const [overtimeDraft, setOvertimeDraft] = useState({ teacherName: "", department: "", hourlyRate: "400" });
+  const [overtimeSearch, setOvertimeSearch] = useState("");
+  const [overtimeDepartmentFilter, setOvertimeDepartmentFilter] = useState("");
+  const [editingOvertimeKey, setEditingOvertimeKey] = useState<string | null>(null);
+  const [editingOvertimeRate, setEditingOvertimeRate] = useState("");
+
+  const teachers = getTeachers();
+  const overtimeTeachers = overtimeDraft.department
+    ? teachers.filter((teacher) => teacher.department === overtimeDraft.department)
+    : [];
+  const overtimeDepartments = Array.from(new Set(config.overtimeConfig.map((entry) => entry.department))).sort();
 
   const sectionCount = section ? config[section.key].length : 0;
 
@@ -49,9 +60,10 @@ export default function SettingsSection() {
     if (section.key === "overtimeConfig") {
       addOvertimeSystemConfigValue({
         teacherName: overtimeDraft.teacherName,
+        department: overtimeDraft.department,
         hourlyRate: Number(overtimeDraft.hourlyRate),
       });
-      setOvertimeDraft({ teacherName: "", hourlyRate: "400" });
+      setOvertimeDraft({ teacherName: "", department: "", hourlyRate: "400" });
       return;
     }
 
@@ -66,11 +78,27 @@ export default function SettingsSection() {
     }
 
     if (section.key === "overtimeConfig") {
-      removeOvertimeSystemConfigValue(value);
+      const [teacherName, department] = value.split("||");
+      removeOvertimeSystemConfigValue(teacherName, department);
       return;
     }
 
     removeConfigValue(section.key, value);
+  };
+
+  const startInlineEdit = (teacherName: string, department: string, hourlyRate: number) => {
+    setEditingOvertimeKey(`${teacherName}||${department}`);
+    setEditingOvertimeRate(String(hourlyRate));
+  };
+
+  const saveInlineEdit = (teacherName: string, department: string) => {
+    addOvertimeSystemConfigValue({
+      teacherName,
+      department,
+      hourlyRate: Number(editingOvertimeRate),
+    });
+    setEditingOvertimeKey(null);
+    setEditingOvertimeRate("");
   };
 
   return (
@@ -167,30 +195,108 @@ export default function SettingsSection() {
               </button>
             </div>
           ) : section.key === "overtimeConfig" ? (
-            <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_auto]">
-              <input
-                type="text"
-                value={overtimeDraft.teacherName}
-                onChange={(event) => setOvertimeDraft((current) => ({ ...current, teacherName: event.target.value }))}
-                placeholder="Teacher name"
-                className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="number"
-                min="0"
-                value={overtimeDraft.hourlyRate}
-                onChange={(event) => setOvertimeDraft((current) => ({ ...current, hourlyRate: event.target.value }))}
-                placeholder="Hourly rate"
-                className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={handleAdd}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-              >
-                <Add />
-                Add
-              </button>
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-[1fr_1.2fr_1fr_auto]">
+                <select
+                  value={overtimeDraft.department}
+                  onChange={(event) =>
+                    setOvertimeDraft((current) => ({
+                      ...current,
+                      department: event.target.value,
+                      teacherName: "",
+                    }))
+                  }
+                  aria-label="Overtime department"
+                  title="Overtime department"
+                  className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select department</option>
+                  {config.departments.map((department) => (
+                    <option key={department} value={department}>
+                      {department}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={overtimeDraft.teacherName}
+                  onChange={(event) => setOvertimeDraft((current) => ({ ...current, teacherName: event.target.value }))}
+                  aria-label="Overtime teacher"
+                  title="Overtime teacher"
+                  disabled={!overtimeDraft.department}
+                  className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                >
+                  <option value="">{overtimeDraft.department ? "Select teacher" : "Select department first"}</option>
+                  {overtimeTeachers.length > 0 ? (
+                    overtimeTeachers.map((teacher) => (
+                      <option key={teacher.id} value={teacher.name}>
+                        {teacher.name}
+                      </option>
+                    ))
+                  ) : overtimeDraft.department ? (
+                    <option value="" disabled>
+                      No teachers found in this department
+                    </option>
+                  ) : null}
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  value={overtimeDraft.hourlyRate}
+                  onChange={(event) => setOvertimeDraft((current) => ({ ...current, hourlyRate: event.target.value }))}
+                  placeholder="Hourly rate"
+                  disabled={!overtimeDraft.teacherName}
+                  className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={handleAdd}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                >
+                  <Add />
+                  Add
+                </button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                <input
+                  type="text"
+                  value={overtimeSearch}
+                  onChange={(event) => setOvertimeSearch(event.target.value)}
+                  placeholder="Search teacher name or rate"
+                  className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setOvertimeSearch("")}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <select
+                  value={overtimeDepartmentFilter}
+                  onChange={(event) => setOvertimeDepartmentFilter(event.target.value)}
+                  aria-label="Filter overtime config by department"
+                  title="Filter overtime config by department"
+                  className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Departments</option>
+                  {overtimeDepartments.map((department) => (
+                    <option key={department} value={department}>
+                      {department}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setOvertimeDepartmentFilter("")}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                >
+                  Clear Filter
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -229,18 +335,83 @@ export default function SettingsSection() {
                   </button>
                 ))
               : section.key === "overtimeConfig"
-              ? config.overtimeConfig.map((entry) => (
-                  <button
-                    key={entry.teacherName}
-                    type="button"
-                    onClick={() => handleDelete(entry.teacherName)}
-                    className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                    title="Remove overtime rate"
-                  >
-                    {entry.teacherName} - ${entry.hourlyRate}/hr
-                    <DeleteOutline fontSize="small" />
-                  </button>
-                ))
+              ? config.overtimeConfig
+                  .filter((entry) => !overtimeDepartmentFilter || entry.department === overtimeDepartmentFilter)
+                  .filter((entry) => {
+                    const query = overtimeSearch.trim().toLowerCase();
+                    if (!query) {
+                      return true;
+                    }
+
+                    return (
+                      entry.teacherName.toLowerCase().includes(query) ||
+                      entry.department.toLowerCase().includes(query) ||
+                      String(entry.hourlyRate).includes(query)
+                    );
+                  })
+                  .map((entry) =>
+                    editingOvertimeKey === `${entry.teacherName}||${entry.department}` ? (
+                      <div
+                        key={`${entry.teacherName}||${entry.department}`}
+                        className="flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
+                      >
+                        <span>
+                          {entry.teacherName} ({entry.department})
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editingOvertimeRate}
+                          onChange={(event) => setEditingOvertimeRate(event.target.value)}
+                          placeholder="Hourly rate"
+                          aria-label={`Hourly rate for ${entry.teacherName}`}
+                          className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => saveInlineEdit(entry.teacherName, entry.department)}
+                          className="rounded-md bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingOvertimeKey(null);
+                            setEditingOvertimeRate("");
+                          }}
+                          className="rounded-md border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        key={`${entry.teacherName}||${entry.department}`}
+                        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
+                      >
+                        <span>
+                          {entry.teacherName} ({entry.department}) - ${entry.hourlyRate}/hr
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => startInlineEdit(entry.teacherName, entry.department, entry.hourlyRate)}
+                          className="rounded-full px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                          title="Edit overtime rate"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(`${entry.teacherName}||${entry.department}`)}
+                          className="rounded-full p-1 hover:bg-blue-100"
+                          title="Remove overtime rate"
+                        >
+                          <DeleteOutline fontSize="small" />
+                        </button>
+                      </div>
+                    ),
+                  )
               : config[section.key].map((value) => (
                   <button
                     key={value}

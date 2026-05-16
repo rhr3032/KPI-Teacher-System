@@ -19,6 +19,7 @@ export type ShiftOption = {
 
 export type OvertimeConfigOption = {
   teacherName: string;
+  department: string;
   hourlyRate: number;
 };
 
@@ -66,10 +67,10 @@ const defaultSystemConfig: SystemConfig = {
   ],
   leaveTypes: ["Sick Leave", "Casual Leave", "Maternity Leave", "Bereavement Leave", "Unpaid Leave"],
   overtimeConfig: [
-    { teacherName: "John Smith", hourlyRate: 450 },
-    { teacherName: "Sarah Johnson", hourlyRate: 500 },
-    { teacherName: "Michael Chen", hourlyRate: 400 },
-    { teacherName: "Emma Williams", hourlyRate: 425 },
+    { teacherName: "John Smith", department: "Mathematics", hourlyRate: 450 },
+    { teacherName: "Sarah Johnson", department: "Science", hourlyRate: 500 },
+    { teacherName: "Michael Chen", department: "English", hourlyRate: 400 },
+    { teacherName: "Emma Williams", department: "History", hourlyRate: 425 },
   ],
   designations: ["Teacher", "Senior Teacher", "HR Officer", "Payroll Assistant", "Systems Support"],
   educationalQualifications: ["SSC", "HSC", "Diploma", "BSc", "MSc", "BA", "MA"],
@@ -224,14 +225,16 @@ function normalizeOvertimeConfigOption(value: unknown): OvertimeConfigOption | n
 
   const overtimeConfig = value as Partial<OvertimeConfigOption>;
   const teacherName = String(overtimeConfig.teacherName ?? "").trim();
+  const department = String(overtimeConfig.department ?? "").trim();
   const hourlyRate = Number(overtimeConfig.hourlyRate);
 
-  if (!teacherName || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
+  if (!teacherName || !department || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
     return null;
   }
 
   return {
     teacherName,
+    department,
     hourlyRate,
   };
 }
@@ -401,18 +404,23 @@ export function removeShiftSystemConfigValue(name: string) {
 
 export function addOvertimeSystemConfigValue(value: OvertimeConfigOption) {
   const teacherName = value.teacherName.trim();
+  const department = value.department.trim();
   const hourlyRate = Number(value.hourlyRate);
 
-  if (!teacherName || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
+  if (!teacherName || !department || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
     return;
   }
 
   const nextConfig = getSystemConfig();
-  const nextValues = nextConfig.overtimeConfig.some((entry) => entry.teacherName === teacherName)
+  const nextValues = nextConfig.overtimeConfig.some(
+    (entry) => entry.teacherName === teacherName && entry.department === department,
+  )
     ? nextConfig.overtimeConfig.map((entry) =>
-        entry.teacherName === teacherName ? { teacherName, hourlyRate } : entry,
+        entry.teacherName === teacherName && entry.department === department
+          ? { teacherName, department, hourlyRate }
+          : entry,
       )
-    : [{ teacherName, hourlyRate }, ...nextConfig.overtimeConfig];
+    : [{ teacherName, department, hourlyRate }, ...nextConfig.overtimeConfig];
 
   setSystemConfig({
     ...nextConfig,
@@ -420,12 +428,14 @@ export function addOvertimeSystemConfigValue(value: OvertimeConfigOption) {
   });
 }
 
-export function removeOvertimeSystemConfigValue(teacherName: string) {
+export function removeOvertimeSystemConfigValue(teacherName: string, department: string) {
   const nextConfig = getSystemConfig();
 
   setSystemConfig({
     ...nextConfig,
-    overtimeConfig: nextConfig.overtimeConfig.filter((entry) => entry.teacherName !== teacherName),
+    overtimeConfig: nextConfig.overtimeConfig.filter(
+      (entry) => entry.teacherName !== teacherName || entry.department !== department,
+    ),
   });
 }
 
