@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 import { AttachMoney, CheckCircle, Download, ReceiptLong, Visibility } from "@mui/icons-material";
-import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 type PayrollStatus = "Paid" | "Pending";
 type AdvanceRequestStatus = "Pending" | "Paid" | "Rejected";
@@ -8,6 +15,7 @@ type AdvanceRequestStatus = "Pending" | "Paid" | "Rejected";
 type PayrollRecord = {
   id: number;
   name: string;
+  department: string;
   month: string;
   baseSalary: number;
   overtime: number;
@@ -24,6 +32,7 @@ type AdvanceRequest = {
   id: number;
   teacherId: number;
   teacherName: string;
+  department: string;
   amount: number;
   reason: string;
   requestedAt: string;
@@ -85,6 +94,7 @@ function createSamplePayrollData(): PayrollRecord[] {
     {
       id: 1,
       name: "John Smith",
+      department: "Mathematics",
       month: "2026-05",
       baseSalary: 50000,
       overtime: 2500,
@@ -99,6 +109,7 @@ function createSamplePayrollData(): PayrollRecord[] {
     {
       id: 2,
       name: "Sarah Johnson",
+      department: "Science",
       month: "2026-05",
       baseSalary: 55000,
       overtime: 3000,
@@ -113,6 +124,7 @@ function createSamplePayrollData(): PayrollRecord[] {
     {
       id: 3,
       name: "Michael Chen",
+      department: "English",
       month: "2026-05",
       baseSalary: 35000,
       overtime: 1000,
@@ -124,6 +136,7 @@ function createSamplePayrollData(): PayrollRecord[] {
     {
       id: 4,
       name: "Emma Williams",
+      department: "History",
       month: "2026-05",
       baseSalary: 30000,
       overtime: 1500,
@@ -141,6 +154,7 @@ function createSampleAdvanceRequests(): AdvanceRequest[] {
       id: 1,
       teacherId: 4,
       teacherName: "Emma Williams",
+      department: "History",
       amount: 3000,
       reason: "Family emergency",
       requestedAt: "2026-05-04",
@@ -151,6 +165,7 @@ function createSampleAdvanceRequests(): AdvanceRequest[] {
       id: 2,
       teacherId: 3,
       teacherName: "Michael Chen",
+      department: "English",
       amount: 2000,
       reason: "Medical expense",
       requestedAt: "2026-05-05",
@@ -166,6 +181,20 @@ export default function Payroll() {
   const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(null);
   const [formError, setFormError] = useState("");
   const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
+  const [advanceDepartment, setAdvanceDepartment] = useState("");
+  const [advanceTeacherId, setAdvanceTeacherId] = useState("");
+  const [advanceAmount, setAdvanceAmount] = useState("1000");
+
+  const departments = useMemo(() => {
+    const uniqueDepartments = new Set(payrollData.map((record) => record.department));
+    return Array.from(uniqueDepartments).sort();
+  }, [payrollData]);
+
+  const advanceTeachers = useMemo(() => {
+    return payrollData.filter(
+      (record) => record.month === selectedMonth && (!advanceDepartment || record.department === advanceDepartment),
+    );
+  }, [advanceDepartment, payrollData, selectedMonth]);
 
   const visibleRecords = useMemo(
     () => payrollData.filter((record) => record.month === selectedMonth),
@@ -220,12 +249,19 @@ export default function Payroll() {
 
   const openAdvanceSalaryDialog = () => {
     setFormError("");
+    const defaultDepartment = departments[0] ?? "";
+    const teachersInDepartment = payrollData.filter(
+      (record) => record.month === selectedMonth && (!defaultDepartment || record.department === defaultDepartment),
+    );
+    setAdvanceDepartment(defaultDepartment);
+    setAdvanceTeacherId(String(teachersInDepartment[0]?.id ?? ""));
+    setAdvanceAmount("1000");
     setAdvanceDialogOpen(true);
   };
 
-  const submitAdvanceRequest = (values: ActionDialogValues) => {
-    const teacherId = Number(values.selectedTeacherId ?? "");
-    const amount = Number(values.advanceAmount ?? "");
+  const submitAdvanceRequest = () => {
+    const teacherId = Number(advanceTeacherId);
+    const amount = Number(advanceAmount);
     const teacher = payrollData.find((record) => record.id === teacherId);
 
     if (!teacher) {
@@ -250,6 +286,7 @@ export default function Payroll() {
         id: Date.now(),
         teacherId: teacher.id,
         teacherName: teacher.name,
+        department: teacher.department,
         amount,
         reason: "Advance Salary",
         requestedAt: new Date().toISOString().slice(0, 10),
@@ -336,6 +373,7 @@ export default function Payroll() {
       ["Invoice Date", invoiceDate],
       ["Invoice Type", "Advance Salary Payment"],
       ["Teacher", request.teacherName],
+      ["Department", request.department],
       ["Requested Amount", request.amount.toString()],
       ["Requested On", request.requestedAt],
       ["Paid On", request.paidAt ?? "-"],
@@ -569,32 +607,90 @@ export default function Payroll() {
         ))}
       </div>
 
-      <ActionDialog
-        open={advanceDialogOpen}
-        onOpenChange={setAdvanceDialogOpen}
-        title="Advance Salary"
-        description="Create a new advance salary request from the payroll screen."
-        submitLabel="Submit Advance"
-        initialValues={{
-          selectedTeacherId: String(payrollData[0]?.id ?? ""),
-          advanceAmount: "1000",
-        }}
-        fields={[
-          {
-            name: "selectedTeacherId",
-            label: "Teacher",
-            type: "select",
-            options: payrollData.map((record) => ({ label: record.name, value: String(record.id) })),
-          },
-          {
-            name: "advanceAmount",
-            label: "Advance Amount",
-            type: "number",
-            placeholder: "Enter requested advance",
-          },
-        ]}
-        onSubmit={submitAdvanceRequest}
-      />
+      <Dialog open={advanceDialogOpen} onOpenChange={setAdvanceDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Advance Salary</DialogTitle>
+            <DialogDescription>
+              Select a department first, then pick a teacher to create an advance salary request.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="space-y-2 text-sm font-medium text-gray-700">
+              <span>Department</span>
+              <select
+                value={advanceDepartment}
+                onChange={(event) => {
+                  const nextDepartment = event.target.value;
+                  setAdvanceDepartment(nextDepartment);
+                  const nextTeachers = payrollData.filter(
+                    (record) =>
+                      record.month === selectedMonth && (!nextDepartment || record.department === nextDepartment),
+                  );
+                  setAdvanceTeacherId(String(nextTeachers[0]?.id ?? ""));
+                }}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Departments</option>
+                {departments.map((department) => (
+                  <option key={department} value={department}>
+                    {department}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-2 text-sm font-medium text-gray-700">
+              <span>Teacher</span>
+              <select
+                value={advanceTeacherId}
+                onChange={(event) => setAdvanceTeacherId(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                disabled={advanceTeachers.length === 0}
+              >
+                <option value="">Choose Teacher...</option>
+                {advanceTeachers.map((record) => (
+                  <option key={record.id} value={record.id}>
+                    {record.name} ({record.department})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-2 text-sm font-medium text-gray-700 sm:col-span-2">
+              <span>Advance Amount</span>
+              <input
+                type="number"
+                min="1"
+                value={advanceAmount}
+                onChange={(event) => setAdvanceAmount(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter requested advance"
+              />
+            </label>
+          </div>
+
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setAdvanceDialogOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submitAdvanceRequest}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Submit Advance
+            </button>
+          </DialogFooter>
+
+          {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
+        </DialogContent>
+      </Dialog>
 
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <h4 className="font-semibold text-gray-900 mb-2">Salary Logic</h4>
