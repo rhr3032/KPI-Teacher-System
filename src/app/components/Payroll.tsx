@@ -221,7 +221,6 @@ export default function Payroll() {
   const submitAdvanceRequest = (values: ActionDialogValues) => {
     const teacherId = Number(values.selectedTeacherId ?? "");
     const amount = Number(values.advanceAmount ?? "");
-    const reason = String(values.advanceReason ?? "");
     const teacher = payrollData.find((record) => record.id === teacherId);
 
     if (!teacher) {
@@ -247,7 +246,7 @@ export default function Payroll() {
         teacherId: teacher.id,
         teacherName: teacher.name,
         amount,
-        reason: reason.trim() || "Monthly advance request",
+        reason: "Advance Salary",
         requestedAt: new Date().toISOString().slice(0, 10),
         status: "Pending",
       },
@@ -530,7 +529,6 @@ export default function Payroll() {
         initialValues={{
           selectedTeacherId: String(payrollData[0]?.id ?? ""),
           advanceAmount: "1000",
-          advanceReason: "Monthly advance request",
         }}
         fields={[
           {
@@ -544,13 +542,6 @@ export default function Payroll() {
             label: "Advance Amount",
             type: "number",
             placeholder: "Enter requested advance",
-          },
-          {
-            name: "advanceReason",
-            label: "Reason",
-            type: "textarea",
-            placeholder: "Why is the advance needed?",
-            rows: 4,
           },
         ]}
         onSubmit={submitAdvanceRequest}
