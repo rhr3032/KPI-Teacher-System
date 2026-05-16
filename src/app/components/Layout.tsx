@@ -11,12 +11,17 @@ import {
   Settings as SettingsIcon,
   Menu,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
+import { useAuth } from "../auth";
 
 export default function Layout() {
+  const { session, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const menuItems = [
+  const adminMenuItems = [
     { path: "/", label: "Dashboard", icon: <DashboardIcon /> },
     { path: "/teachers", label: "Teacher Profiles", icon: <People /> },
     { path: "/attendance", label: "Attendance", icon: <AccessTime /> },
@@ -27,6 +32,29 @@ export default function Layout() {
     { path: "/settings", label: "Settings", icon: <SettingsIcon /> },
     { path: "/resign", label: "Resign Management", icon: <ExitToApp /> },
   ];
+
+  const teacherMenuItems = [
+    { path: "/teacher-portal", label: "Teacher Portal", icon: <EventNote /> },
+  ];
+
+  const menuItems = session.role === "admin" ? adminMenuItems : teacherMenuItems;
+  const portalTitle = session.role === "admin" ? "Admin Portal" : "Teacher Portal";
+
+  const headerDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-US", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date()),
+    [],
+  );
+
+  useEffect(() => {
+    if (session.role === "teacher" && location.pathname !== "/teacher-portal") {
+      navigate("/teacher-portal", { replace: true });
+    }
+  }, [session.role, location.pathname, navigate]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -68,8 +96,15 @@ export default function Layout() {
         <div className="p-4 border-t border-blue-800">
           {sidebarOpen && (
             <div className="text-sm">
-              <p className="font-semibold">Admin User</p>
-              <p className="text-blue-300 text-xs">admin@kpi.edu</p>
+              <p className="font-semibold">{session.name}</p>
+              <p className="text-blue-300 text-xs">{session.email}</p>
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-3 text-xs bg-blue-800 hover:bg-blue-700 px-2 py-1 rounded"
+              >
+                Logout
+              </button>
             </div>
           )}
         </div>
@@ -78,9 +113,9 @@ export default function Layout() {
       <main className="flex-1 overflow-y-auto">
         <header className="bg-white shadow-sm px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-800">Teacher Management System</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">Teacher Management System - {portalTitle}</h2>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">May 5, 2026</span>
+              <span className="text-sm text-gray-600">{headerDate}</span>
             </div>
           </div>
         </header>

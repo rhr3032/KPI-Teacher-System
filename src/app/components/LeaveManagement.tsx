@@ -1,73 +1,10 @@
 import { useMemo, useState } from "react";
-import { Add, CheckCircle, Cancel, HourglassEmpty } from "@mui/icons-material";
-import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
-
-type LeaveRequest = {
-  id: number;
-  teacher: string;
-  department: string;
-  leaveType: string;
-  startDate: string;
-  endDate: string;
-  days: number;
-  reason: string;
-  status: string;
-  substitute: string | null;
-};
+import { CheckCircle, Cancel, HourglassEmpty } from "@mui/icons-material";
+import { loadLeaveRequests, saveLeaveRequests } from "../leave-requests-store";
 
 export default function LeaveManagement() {
   const [filter, setFilter] = useState("all");
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([
-    {
-      id: 1,
-      teacher: "John Smith",
-      department: "Mathematics",
-      leaveType: "Sick Leave",
-      startDate: "2026-05-10",
-      endDate: "2026-05-12",
-      days: 3,
-      reason: "Medical treatment",
-      status: "Pending",
-      substitute: null,
-    },
-    {
-      id: 2,
-      teacher: "Sarah Johnson",
-      department: "Science",
-      leaveType: "Annual Leave",
-      startDate: "2026-05-15",
-      endDate: "2026-05-20",
-      days: 6,
-      reason: "Personal vacation",
-      status: "Approved",
-      substitute: "Michael Chen",
-    },
-    {
-      id: 3,
-      teacher: "Emma Williams",
-      department: "History",
-      leaveType: "Emergency Leave",
-      startDate: "2026-05-06",
-      endDate: "2026-05-06",
-      days: 1,
-      reason: "Family emergency",
-      status: "Rejected",
-      substitute: null,
-    },
-    {
-      id: 4,
-      teacher: "Michael Chen",
-      department: "English",
-      leaveType: "Sick Leave",
-      startDate: "2026-05-08",
-      endDate: "2026-05-09",
-      days: 2,
-      reason: "Flu",
-      status: "Approved",
-      substitute: "John Smith",
-    },
-  ]);
-  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [leaveRequests, setLeaveRequests] = useState(() => loadLeaveRequests());
 
   const filteredRequests = useMemo(
     () =>
@@ -78,88 +15,19 @@ export default function LeaveManagement() {
     [filter, leaveRequests],
   );
 
-  const leaveDefaults = useMemo<ActionDialogValues>(
-    () => ({
-      teacher: "",
-      department: "",
-      leaveType: "Sick Leave",
-      startDate: "2026-05-05",
-      endDate: "2026-05-05",
-      days: "1",
-      reason: "",
-      substitute: "",
-      status: "Pending",
-    }),
-    [],
-  );
-
-  const handleLeaveSubmit = (values: ActionDialogValues) => {
-    setLeaveRequests((current) => [
-      {
-        id: Date.now(),
-        teacher: String(values.teacher ?? ""),
-        department: String(values.department ?? ""),
-        leaveType: String(values.leaveType ?? "Sick Leave"),
-        startDate: String(values.startDate ?? ""),
-        endDate: String(values.endDate ?? ""),
-        days: Number(values.days ?? 1),
-        reason: String(values.reason ?? ""),
-        status: String(values.status ?? "Pending"),
-        substitute: String(values.substitute ?? "").trim() || null,
-      },
-      ...current,
-    ]);
-  };
-
   const updateLeaveStatus = (id: number, status: string) => {
-    setLeaveRequests((current) =>
-      current.map((request) => (request.id === id ? { ...request, status } : request)),
-    );
+    setLeaveRequests((current) => {
+      const next = current.map((request) => (request.id === id ? { ...request, status } : request));
+      saveLeaveRequests(next);
+      return next;
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Leave Management System</h2>
-        <button
-          type="button"
-          onClick={() => setLeaveDialogOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Add />
-          New Leave Request
-        </button>
       </div>
-
-      <ActionDialog
-        open={leaveDialogOpen}
-        onOpenChange={setLeaveDialogOpen}
-        title="New Leave Request"
-        description="Submit a leave request for a teacher."
-        submitLabel="Create Request"
-        initialValues={leaveDefaults}
-        fields={[
-          { name: "teacher", label: "Teacher Name", placeholder: "Enter teacher name" },
-          { name: "department", label: "Department", placeholder: "Enter department" },
-          {
-            name: "leaveType",
-            label: "Leave Type",
-            type: "select",
-            options: [
-              { label: "Sick Leave", value: "Sick Leave" },
-              { label: "Annual Leave", value: "Annual Leave" },
-              { label: "Emergency Leave", value: "Emergency Leave" },
-              { label: "Maternity Leave", value: "Maternity Leave" },
-            ],
-          },
-          { name: "startDate", label: "Start Date", type: "date" },
-          { name: "endDate", label: "End Date", type: "date" },
-          { name: "days", label: "Days", type: "number" },
-          { name: "reason", label: "Reason", type: "textarea", rows: 3 },
-          { name: "substitute", label: "Suggested Substitute", placeholder: "Optional" },
-        ]}
-        onSubmit={handleLeaveSubmit}
-      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-6">

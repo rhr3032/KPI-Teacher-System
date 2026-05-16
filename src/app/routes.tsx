@@ -14,6 +14,7 @@ import Settings from "./components/Settings";
 import SettingsSection from "./components/SettingsSection";
 import RoleManagement from "./components/RoleManagement";
 import VacancyManagement from "./components/VacancyManagement";
+import TeacherPortal from "./components/TeacherPortal";
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "teachers", Component: TeacherProfile },
       { path: "teachers/:teacherId", Component: TeacherDetails },
       { path: "attendance", Component: Attendance },
+      { path: "teacher-portal", Component: TeacherPortal },
       { path: "payroll", Component: Payroll },
       { path: "accounting", Component: AccountingFinance },
       { path: "leave", Component: LeaveManagement },
