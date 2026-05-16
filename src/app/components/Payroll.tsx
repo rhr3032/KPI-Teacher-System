@@ -548,65 +548,6 @@ export default function Payroll() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-6 space-y-3">
-        <h4 className="font-semibold text-gray-900">Advance Requests</h4>
-        {advanceRequests.map((request) => (
-          <div key={request.id} className="rounded-lg border border-gray-200 p-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="font-medium text-gray-900">{request.teacherName}</p>
-                <p className="text-xs text-gray-500">{request.reason}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {request.status === "Paid" ? (
-                  <button
-                    type="button"
-                    onClick={() => downloadAdvanceInvoice(request)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                    title="Download advance invoice"
-                  >
-                    <Download fontSize="small" />
-                  </button>
-                ) : null}
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    request.status === "Paid"
-                      ? "bg-green-100 text-green-700"
-                      : request.status === "Rejected"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {request.status}
-                </span>
-              </div>
-            </div>
-            <div className="text-sm text-gray-700 flex items-center justify-between">
-              <span>{formatCurrency(request.amount)}</span>
-              <span>{formatDateLabel(request.requestedAt)}</span>
-            </div>
-            {request.status === "Pending" ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => approveAndPayAdvance(request.id)}
-                  className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Approve & Pay
-                </button>
-                <button
-                  type="button"
-                  onClick={() => rejectAdvance(request.id)}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Reject
-                </button>
-              </div>
-            ) : null}
-          </div>
-        ))}
-      </div>
-
       <Dialog open={advanceDialogOpen} onOpenChange={setAdvanceDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
@@ -691,16 +632,6 @@ export default function Payroll() {
           {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
         </DialogContent>
       </Dialog>
-
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-900 mb-2">Salary Logic</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-          <div>• Gross salary = base salary + overtime + bonus</div>
-          <div>• Advance request is limited to 40% of base salary minus existing balance</div>
-          <div>• When admin pays salary, outstanding advance is recovered automatically</div>
-          <div>• Salary slip exports the full payout breakdown</div>
-        </div>
-      </div>
     </div>
   );
 }
