@@ -372,16 +372,6 @@ export default function Attendance() {
           >
             Daily Attendance
           </button>
-          <button
-            onClick={() => setActiveTab("overtime")}
-            className={`flex-1 px-6 py-3 font-semibold text-center transition-colors ${
-              activeTab === "overtime"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Overtime Management
-          </button>
         </div>
 
         {/* Daily Attendance Tab */}
@@ -516,77 +506,7 @@ export default function Attendance() {
           </div>
         )}
 
-        {/* Overtime Management Tab */}
-        {activeTab === "overtime" && (
-          <div className="p-6 space-y-4">
-            {/* Header with Button */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Overtime Management</h3>
-              <button
-                onClick={() => setOvertimeRecordsOpen(true)}
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
-              >
-                View Overtime Records
-              </button>
-            </div>
 
-            {/* Department Filter */}
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Department</label>
-              <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Overtime Teachers List */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Teachers Available for Overtime Checkout</h3>
-              <div className="space-y-2">
-                {overtimeTeachers.map((teacher) => {
-                  const checkedRecord = visibleRecords.find((r) => r.teacherId === teacher.id && r.checkIn && !r.checkOut);
-
-                  return (
-                    <div key={teacher.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-gray-900">{teacher.name}</p>
-                          <p className="text-sm text-gray-600">{teacher.department} • Shift: {teacher.shift}</p>
-                          {checkedRecord && (
-                            <p className="text-sm text-gray-600">
-                              Checked in at: <span className="font-mono font-semibold">{checkedRecord.checkIn}</span>
-                            </p>
-                          )}
-                        </div>
-                        {checkedRecord ? (
-                          <button
-                            onClick={() => {
-                              setSelectedTeacherForOvertime(checkedRecord);
-                              setOvertimeCheckoutOpen(true);
-                            }}
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                          >
-                            Manual Checkout
-                          </button>
-                        ) : (
-                          <span className="text-gray-400 text-sm">Not checked in today</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Overtime Checkout Dialog */}
