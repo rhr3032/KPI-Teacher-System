@@ -17,6 +17,7 @@ import { useSystemConfig } from "../system-config";
 import { settingsSections } from "../settings-meta";
 
 const sectionIcons = {
+  overtimeConfig: <AccessTime />,
   departments: <Apartment />,
   subjects: <Subject />,
   shifts: <AccessTime />,

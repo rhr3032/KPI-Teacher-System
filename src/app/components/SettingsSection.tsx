@@ -2,7 +2,9 @@ import { Add, DeleteOutline, RestartAlt, Settings as SettingsIcon, Tune } from "
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
+  addOvertimeSystemConfigValue,
   addShiftSystemConfigValue,
+  removeOvertimeSystemConfigValue,
   removeShiftSystemConfigValue,
   useSystemConfig,
 } from "../system-config";
@@ -15,6 +17,7 @@ export default function SettingsSection() {
   const section = sectionKey ? getSettingsSectionMeta(sectionKey) : undefined;
   const [draft, setDraft] = useState("");
   const [shiftDraft, setShiftDraft] = useState({ name: "", startTime: "08:00", endTime: "14:00" });
+  const [overtimeDraft, setOvertimeDraft] = useState({ teacherName: "", hourlyRate: "400" });
 
   const sectionCount = section ? config[section.key].length : 0;
 
@@ -43,6 +46,15 @@ export default function SettingsSection() {
       return;
     }
 
+    if (section.key === "overtimeConfig") {
+      addOvertimeSystemConfigValue({
+        teacherName: overtimeDraft.teacherName,
+        hourlyRate: Number(overtimeDraft.hourlyRate),
+      });
+      setOvertimeDraft({ teacherName: "", hourlyRate: "400" });
+      return;
+    }
+
     addConfigValue(section.key, draft);
     setDraft("");
   };
@@ -50,6 +62,11 @@ export default function SettingsSection() {
   const handleDelete = (value: string) => {
     if (section.key === "shifts") {
       removeShiftSystemConfigValue(value);
+      return;
+    }
+
+    if (section.key === "overtimeConfig") {
+      removeOvertimeSystemConfigValue(value);
       return;
     }
 
@@ -149,6 +166,32 @@ export default function SettingsSection() {
                 Add
               </button>
             </div>
+          ) : section.key === "overtimeConfig" ? (
+            <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_auto]">
+              <input
+                type="text"
+                value={overtimeDraft.teacherName}
+                onChange={(event) => setOvertimeDraft((current) => ({ ...current, teacherName: event.target.value }))}
+                placeholder="Teacher name"
+                className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="number"
+                min="0"
+                value={overtimeDraft.hourlyRate}
+                onChange={(event) => setOvertimeDraft((current) => ({ ...current, hourlyRate: event.target.value }))}
+                placeholder="Hourly rate"
+                className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              >
+                <Add />
+                Add
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
@@ -182,6 +225,19 @@ export default function SettingsSection() {
                     <span>
                       {shift.name} {shift.startTime} - {shift.endTime}
                     </span>
+                    <DeleteOutline fontSize="small" />
+                  </button>
+                ))
+              : section.key === "overtimeConfig"
+              ? config.overtimeConfig.map((entry) => (
+                  <button
+                    key={entry.teacherName}
+                    type="button"
+                    onClick={() => handleDelete(entry.teacherName)}
+                    className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                    title="Remove overtime rate"
+                  >
+                    {entry.teacherName} - ${entry.hourlyRate}/hr
                     <DeleteOutline fontSize="small" />
                   </button>
                 ))

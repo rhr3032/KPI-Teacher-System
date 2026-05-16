@@ -10,6 +10,13 @@ export type SettingsSectionMeta = {
 
 export const settingsSections: SettingsSectionMeta[] = [
   {
+    key: "overtimeConfig",
+    title: "Overtime Config",
+    description: "Assign hourly overtime payment per teacher.",
+    placeholder: "Add a teacher overtime rate",
+    path: "/settings/overtimeConfig",
+  },
+  {
     key: "departments",
     title: "Departments",
     description: "Used when adding teachers and staff.",

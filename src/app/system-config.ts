@@ -5,6 +5,7 @@ export type SystemConfigKey =
   | "subjects"
   | "shifts"
   | "leaveTypes"
+  | "overtimeConfig"
   | "designations"
   | "educationalQualifications"
   | "roles"
@@ -14,6 +15,11 @@ export type ShiftOption = {
   name: string;
   startTime: string;
   endTime: string;
+};
+
+export type OvertimeConfigOption = {
+  teacherName: string;
+  hourlyRate: number;
 };
 
 export type RoleOption = {
@@ -38,13 +44,14 @@ export type SystemConfig = {
   subjects: string[];
   shifts: ShiftOption[];
   leaveTypes: string[];
+  overtimeConfig: OvertimeConfigOption[];
   designations: string[];
   educationalQualifications: string[];
   roles: RoleOption[];
   vacancies: VacancyOption[];
 };
 
-type StringConfigKey = Exclude<SystemConfigKey, "shifts" | "roles" | "vacancies">;
+type StringConfigKey = Exclude<SystemConfigKey, "shifts" | "roles" | "vacancies" | "overtimeConfig">;
 
 const STORAGE_KEY = "hrms-system-config";
 const CONFIG_CHANGE_EVENT = "hrms-system-config-change";
@@ -58,6 +65,12 @@ const defaultSystemConfig: SystemConfig = {
     { name: "Evening", startTime: "14:00", endTime: "20:00" },
   ],
   leaveTypes: ["Sick Leave", "Casual Leave", "Maternity Leave", "Bereavement Leave", "Unpaid Leave"],
+  overtimeConfig: [
+    { teacherName: "John Smith", hourlyRate: 450 },
+    { teacherName: "Sarah Johnson", hourlyRate: 500 },
+    { teacherName: "Michael Chen", hourlyRate: 400 },
+    { teacherName: "Emma Williams", hourlyRate: 425 },
+  ],
   designations: ["Teacher", "Senior Teacher", "HR Officer", "Payroll Assistant", "Systems Support"],
   educationalQualifications: ["SSC", "HSC", "Diploma", "BSc", "MSc", "BA", "MA"],
   roles: [
@@ -204,6 +217,25 @@ function normalizeVacancyOption(value: unknown, fallback: VacancyOption): Vacanc
   };
 }
 
+function normalizeOvertimeConfigOption(value: unknown): OvertimeConfigOption | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const overtimeConfig = value as Partial<OvertimeConfigOption>;
+  const teacherName = String(overtimeConfig.teacherName ?? "").trim();
+  const hourlyRate = Number(overtimeConfig.hourlyRate);
+
+  if (!teacherName || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
+    return null;
+  }
+
+  return {
+    teacherName,
+    hourlyRate,
+  };
+}
+
 function normalizeShifts(values: unknown, fallback: ShiftOption[]) {
   if (!Array.isArray(values)) {
     return [...fallback];
@@ -243,6 +275,22 @@ function normalizeVacancies(values: unknown, fallback: VacancyOption[]) {
   return normalized.length > 0 ? normalized : [...fallback];
 }
 
+function normalizeOvertimeConfigs(values: unknown, fallback: OvertimeConfigOption[]) {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalized = values
+    .map((value) => normalizeOvertimeConfigOption(value))
+    .filter((value): value is OvertimeConfigOption => Boolean(value))
+    .filter(
+      (value, index, array) =>
+        value.teacherName.length > 0 && array.findIndex((entry) => entry.teacherName === value.teacherName) === index,
+    );
+
+  return normalized.length > 0 ? normalized : [...fallback];
+}
+
 function normalizeConfig(rawValue: unknown): SystemConfig {
   const rawConfig = rawValue && typeof rawValue === "object" ? (rawValue as Partial<SystemConfig>) : {};
 
@@ -250,7 +298,8 @@ function normalizeConfig(rawValue: unknown): SystemConfig {
     departments: normalizeOptions(rawConfig.departments, defaultSystemConfig.departments),
     subjects: normalizeOptions(rawConfig.subjects, defaultSystemConfig.subjects),
     shifts: normalizeShifts(rawConfig.shifts, defaultSystemConfig.shifts),
-      leaveTypes: normalizeOptions(rawConfig.leaveTypes, defaultSystemConfig.leaveTypes),
+    leaveTypes: normalizeOptions(rawConfig.leaveTypes, defaultSystemConfig.leaveTypes),
+    overtimeConfig: normalizeOvertimeConfigs(rawConfig.overtimeConfig, defaultSystemConfig.overtimeConfig),
     designations: normalizeOptions(rawConfig.designations, defaultSystemConfig.designations),
     educationalQualifications: normalizeOptions(
       rawConfig.educationalQualifications,
@@ -347,6 +396,36 @@ export function removeShiftSystemConfigValue(name: string) {
   setSystemConfig({
     ...nextConfig,
     shifts: nextConfig.shifts.filter((entry) => entry.name !== name),
+  });
+}
+
+export function addOvertimeSystemConfigValue(value: OvertimeConfigOption) {
+  const teacherName = value.teacherName.trim();
+  const hourlyRate = Number(value.hourlyRate);
+
+  if (!teacherName || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
+    return;
+  }
+
+  const nextConfig = getSystemConfig();
+  const nextValues = nextConfig.overtimeConfig.some((entry) => entry.teacherName === teacherName)
+    ? nextConfig.overtimeConfig.map((entry) =>
+        entry.teacherName === teacherName ? { teacherName, hourlyRate } : entry,
+      )
+    : [{ teacherName, hourlyRate }, ...nextConfig.overtimeConfig];
+
+  setSystemConfig({
+    ...nextConfig,
+    overtimeConfig: nextValues,
+  });
+}
+
+export function removeOvertimeSystemConfigValue(teacherName: string) {
+  const nextConfig = getSystemConfig();
+
+  setSystemConfig({
+    ...nextConfig,
+    overtimeConfig: nextConfig.overtimeConfig.filter((entry) => entry.teacherName !== teacherName),
   });
 }
 

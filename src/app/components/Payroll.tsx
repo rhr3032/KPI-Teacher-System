@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import { useSystemConfig } from "../system-config";
 
 type PayrollStatus = "Paid" | "Pending";
 type AdvanceRequestStatus = "Pending" | "Paid" | "Rejected";
@@ -80,8 +81,8 @@ function generateInvoiceNumber(prefix: string, id: number) {
   return `${prefix}-${datePart}-${String(id).padStart(4, "0")}`;
 }
 
-function computeSalary(record: PayrollRecord): SalarySnapshot {
-  const grossSalary = record.baseSalary + record.overtime + record.bonus;
+function computeSalary(record: PayrollRecord, overtimePayment: number): SalarySnapshot {
+  const grossSalary = record.baseSalary + overtimePayment + record.bonus;
   const payableBeforeAdvance = Math.max(grossSalary - record.deductions, 0);
   const advanceRecovery = Math.min(record.advanceBalance, payableBeforeAdvance);
   const netSalary = Math.max(payableBeforeAdvance - advanceRecovery, 0);
@@ -97,7 +98,7 @@ function createSamplePayrollData(): PayrollRecord[] {
       department: "Mathematics",
       month: "2026-05",
       baseSalary: 50000,
-      overtime: 2500,
+      overtime: 5,
       bonus: 5000,
       deductions: 1500,
       advanceBalance: 0,
@@ -112,7 +113,7 @@ function createSamplePayrollData(): PayrollRecord[] {
       department: "Science",
       month: "2026-05",
       baseSalary: 55000,
-      overtime: 3000,
+      overtime: 6,
       bonus: 6000,
       deductions: 2000,
       advanceBalance: 0,
@@ -127,7 +128,7 @@ function createSamplePayrollData(): PayrollRecord[] {
       department: "English",
       month: "2026-05",
       baseSalary: 35000,
-      overtime: 1000,
+      overtime: 4,
       bonus: 3000,
       deductions: 500,
       advanceBalance: 0,
@@ -139,7 +140,7 @@ function createSamplePayrollData(): PayrollRecord[] {
       department: "History",
       month: "2026-05",
       baseSalary: 30000,
-      overtime: 1500,
+      overtime: 3,
       bonus: 2500,
       deductions: 1000,
       advanceBalance: 3000,
@@ -175,6 +176,7 @@ function createSampleAdvanceRequests(): AdvanceRequest[] {
 }
 
 export default function Payroll() {
+  const { config } = useSystemConfig();
   const [selectedMonth, setSelectedMonth] = useState("2026-05");
   const [payrollData, setPayrollData] = useState<PayrollRecord[]>(createSamplePayrollData);
   const [advanceRequests, setAdvanceRequests] = useState<AdvanceRequest[]>(createSampleAdvanceRequests);
@@ -196,6 +198,16 @@ export default function Payroll() {
     );
   }, [advanceDepartment, payrollData, selectedMonth]);
 
+  const getOvertimeHourlyRate = (record: PayrollRecord) => {
+    const teacherRate = config.overtimeConfig.find(
+      (entry) => entry.teacherName.trim().toLowerCase() === record.name.trim().toLowerCase(),
+    );
+
+    return teacherRate?.hourlyRate ?? 0;
+  };
+
+  const getOvertimePayment = (record: PayrollRecord) => record.overtime * getOvertimeHourlyRate(record);
+
   const visibleRecords = useMemo(
     () => payrollData.filter((record) => record.month === selectedMonth),
     [payrollData, selectedMonth],
@@ -204,7 +216,8 @@ export default function Payroll() {
   const summaryStats = useMemo(() => {
     const totals = visibleRecords.reduce(
       (accumulator, record) => {
-        const snapshot = computeSalary(record);
+        const overtimePayment = getOvertimePayment(record);
+        const snapshot = computeSalary(record, overtimePayment);
         accumulator.gross += snapshot.grossSalary;
         accumulator.payable += snapshot.netSalary;
         accumulator.advance += record.advanceBalance;
@@ -225,7 +238,7 @@ export default function Payroll() {
       paidEmployees: visibleRecords.filter((record) => record.status === "Paid").length,
       pendingEmployees: visibleRecords.filter((record) => record.status === "Pending").length,
     };
-  }, [visibleRecords]);
+  }, [visibleRecords, config.overtimeConfig]);
 
   const paySalary = (recordId: number) => {
     setPayrollData((current) =>
@@ -234,7 +247,8 @@ export default function Payroll() {
           return record;
         }
 
-        const snapshot = computeSalary(record);
+        const overtimePayment = getOvertimePayment(record);
+        const snapshot = computeSalary(record, overtimePayment);
         return {
           ...record,
           status: "Paid",
@@ -332,7 +346,8 @@ export default function Payroll() {
   };
 
   const downloadSalaryInvoice = (record: PayrollRecord) => {
-    const snapshot = computeSalary(record);
+    const overtimePayment = getOvertimePayment(record);
+    const snapshot = computeSalary(record, overtimePayment);
     const invoiceNumber = generateInvoiceNumber("SAL", record.id);
     const invoiceDate = new Date().toISOString().slice(0, 10);
     const csv = [
@@ -343,7 +358,8 @@ export default function Payroll() {
       ["Teacher", record.name],
       ["Month", record.month],
       ["Base Salary", record.baseSalary.toString()],
-      ["Overtime", record.overtime.toString()],
+      ["Overtime Hours", record.overtime.toString()],
+      ["Overtime Payment", overtimePayment.toString()],
       ["Bonus", record.bonus.toString()],
       ["Deductions", record.deductions.toString()],
       ["Advance Balance", record.advanceBalance.toString()],
@@ -457,6 +473,8 @@ export default function Payroll() {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Teacher</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Gross</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Overtime Hours</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Overtime Payment</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Advance</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Net</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
@@ -465,7 +483,8 @@ export default function Payroll() {
                 </thead>
                 <tbody>
                   {visibleRecords.map((record) => {
-                    const snapshot = computeSalary(record);
+                    const overtimePayment = getOvertimePayment(record);
+                    const snapshot = computeSalary(record, overtimePayment);
                     return (
                       <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4">
@@ -474,7 +493,15 @@ export default function Payroll() {
                         </td>
                         <td className="py-3 px-4 text-gray-700">
                           {formatCurrency(snapshot.grossSalary)}
-                          <div className="text-xs text-gray-500">Base {formatCurrency(record.baseSalary)} + OT {formatCurrency(record.overtime)} + Bonus {formatCurrency(record.bonus)}</div>
+                          <div className="text-xs text-gray-500">
+                            Base {formatCurrency(record.baseSalary)} + OT Payment {formatCurrency(overtimePayment)} + Bonus {formatCurrency(record.bonus)}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-gray-700">
+                          {record.overtime} hr{record.overtime === 1 ? "" : "s"}
+                        </td>
+                        <td className="py-3 px-4 text-gray-700">
+                          {formatCurrency(overtimePayment)}
                         </td>
                         <td className="py-3 px-4 text-red-600">
                           {record.advanceBalance > 0 ? `-${formatCurrency(record.advanceBalance)}` : "-"}
@@ -539,12 +566,21 @@ export default function Payroll() {
       {selectedRecord && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <h4 className="font-semibold text-green-900 mb-2">Selected Payroll Record</h4>
+          {(() => {
+            const overtimePayment = getOvertimePayment(selectedRecord);
+            const snapshot = computeSalary(selectedRecord, overtimePayment);
+
+            return (
+              <>
           <p className="text-sm text-green-800">
-            {selectedRecord.name} - {selectedRecord.month} - {formatCurrency(computeSalary(selectedRecord).netSalary)}
+                {selectedRecord.name} - {selectedRecord.month} - {formatCurrency(snapshot.netSalary)}
           </p>
           <p className="text-sm text-green-800 mt-1">
-            Advance balance: {formatCurrency(selectedRecord.advanceBalance)} | Advance recovered: {formatCurrency(selectedRecord.advanceRecovered ?? 0)}
+                Overtime payment: {formatCurrency(overtimePayment)} | Advance balance: {formatCurrency(selectedRecord.advanceBalance)} | Advance recovered: {formatCurrency(selectedRecord.advanceRecovered ?? 0)}
           </p>
+              </>
+            );
+          })()}
         </div>
       )}
 
