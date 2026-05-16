@@ -23,6 +23,13 @@ export type OvertimeConfigOption = {
   hourlyRate: number;
 };
 
+export type InvoiceConfigOption = {
+  name: string;
+  watermarkLogo?: string; // data URL or asset path
+  header?: string;
+  footer?: string;
+};
+
 export type RoleOption = {
   name: string;
   description: string;
@@ -46,6 +53,7 @@ export type SystemConfig = {
   shifts: ShiftOption[];
   leaveTypes: string[];
   overtimeConfig: OvertimeConfigOption[];
+  invoiceConfig: InvoiceConfigOption[];
   designations: string[];
   educationalQualifications: string[];
   roles: RoleOption[];
@@ -72,6 +80,7 @@ const defaultSystemConfig: SystemConfig = {
     { teacherName: "Michael Chen", department: "English", hourlyRate: 400 },
     { teacherName: "Emma Williams", department: "History", hourlyRate: 425 },
   ],
+  invoiceConfig: [],
   designations: ["Teacher", "Senior Teacher", "HR Officer", "Payroll Assistant", "Systems Support"],
   educationalQualifications: ["SSC", "HSC", "Diploma", "BSc", "MSc", "BA", "MA"],
   roles: [
@@ -294,6 +303,42 @@ function normalizeOvertimeConfigs(values: unknown, fallback: OvertimeConfigOptio
   return normalized.length > 0 ? normalized : [...fallback];
 }
 
+function normalizeInvoiceOption(value: unknown): InvoiceConfigOption | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const invoice = value as Partial<InvoiceConfigOption>;
+  const name = String(invoice.name ?? "").trim();
+  const watermarkLogo = typeof invoice.watermarkLogo === "string" ? invoice.watermarkLogo : "";
+  const header = String(invoice.header ?? "").trim();
+  const footer = String(invoice.footer ?? "").trim();
+
+  if (!name) {
+    return null;
+  }
+
+  return {
+    name,
+    watermarkLogo,
+    header,
+    footer,
+  };
+}
+
+function normalizeInvoiceConfigs(values: unknown, fallback: InvoiceConfigOption[]) {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalized = values
+    .map((value) => normalizeInvoiceOption(value))
+    .filter((value): value is InvoiceConfigOption => Boolean(value))
+    .filter((value, index, array) => value.name.length > 0 && array.findIndex((entry) => entry.name === value.name) === index);
+
+  return normalized.length > 0 ? normalized : [...fallback];
+}
+
 function normalizeConfig(rawValue: unknown): SystemConfig {
   const rawConfig = rawValue && typeof rawValue === "object" ? (rawValue as Partial<SystemConfig>) : {};
 
@@ -303,6 +348,7 @@ function normalizeConfig(rawValue: unknown): SystemConfig {
     shifts: normalizeShifts(rawConfig.shifts, defaultSystemConfig.shifts),
     leaveTypes: normalizeOptions(rawConfig.leaveTypes, defaultSystemConfig.leaveTypes),
     overtimeConfig: normalizeOvertimeConfigs(rawConfig.overtimeConfig, defaultSystemConfig.overtimeConfig),
+    invoiceConfig: normalizeInvoiceConfigs(rawConfig.invoiceConfig, defaultSystemConfig.invoiceConfig),
     designations: normalizeOptions(rawConfig.designations, defaultSystemConfig.designations),
     educationalQualifications: normalizeOptions(
       rawConfig.educationalQualifications,
@@ -425,6 +471,36 @@ export function addOvertimeSystemConfigValue(value: OvertimeConfigOption) {
   setSystemConfig({
     ...nextConfig,
     overtimeConfig: nextValues,
+  });
+}
+
+export function addInvoiceSystemConfigValue(value: InvoiceConfigOption) {
+  const name = String(value.name ?? "").trim();
+  const watermarkLogo = String(value.watermarkLogo ?? "");
+  const header = String(value.header ?? "").trim();
+  const footer = String(value.footer ?? "").trim();
+
+  if (!name) {
+    return;
+  }
+
+  const nextConfig = getSystemConfig();
+  const nextValues = nextConfig.invoiceConfig.some((entry) => entry.name === name)
+    ? nextConfig.invoiceConfig.map((entry) => (entry.name === name ? { name, watermarkLogo, header, footer } : entry))
+    : [{ name, watermarkLogo, header, footer }, ...nextConfig.invoiceConfig];
+
+  setSystemConfig({
+    ...nextConfig,
+    invoiceConfig: nextValues,
+  });
+}
+
+export function removeInvoiceSystemConfigValue(name: string) {
+  const nextConfig = getSystemConfig();
+
+  setSystemConfig({
+    ...nextConfig,
+    invoiceConfig: nextConfig.invoiceConfig.filter((entry) => entry.name !== name),
   });
 }
 

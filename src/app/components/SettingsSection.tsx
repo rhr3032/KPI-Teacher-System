@@ -6,6 +6,8 @@ import {
   addShiftSystemConfigValue,
   removeOvertimeSystemConfigValue,
   removeShiftSystemConfigValue,
+  addInvoiceSystemConfigValue,
+  removeInvoiceSystemConfigValue,
   useSystemConfig,
 } from "../system-config";
 import { getSettingsSectionMeta, settingsSections } from "../settings-meta";
@@ -16,6 +18,7 @@ export default function SettingsSection() {
   const { sectionKey } = useParams();
   const { config, addConfigValue, removeConfigValue, resetConfig } = useSystemConfig();
   const section = sectionKey ? getSettingsSectionMeta(sectionKey) : undefined;
+
   const [draft, setDraft] = useState("");
   const [shiftDraft, setShiftDraft] = useState({ name: "", startTime: "08:00", endTime: "14:00" });
   const [overtimeDraft, setOvertimeDraft] = useState({ teacherName: "", department: "", hourlyRate: "400" });
@@ -24,13 +27,11 @@ export default function SettingsSection() {
   const [editingOvertimeKey, setEditingOvertimeKey] = useState<string | null>(null);
   const [editingOvertimeRate, setEditingOvertimeRate] = useState("");
 
-  const teachers = getTeachers();
-  const overtimeTeachers = overtimeDraft.department
-    ? teachers.filter((teacher) => teacher.department === overtimeDraft.department)
-    : [];
-  const overtimeDepartments = Array.from(new Set(config.overtimeConfig.map((entry) => entry.department))).sort();
+  const [invoiceDraft, setInvoiceDraft] = useState({ name: "", watermarkLogo: "", header: "", footer: "" });
 
-  const sectionCount = section ? config[section.key].length : 0;
+  const teachers = getTeachers();
+  const overtimeTeachers = overtimeDraft.department ? teachers.filter((t) => t.department === overtimeDraft.department) : [];
+  const overtimeDepartments = Array.from(new Set(config.overtimeConfig.map((entry) => entry.department))).sort();
 
   if (!section) {
     return (
@@ -50,6 +51,8 @@ export default function SettingsSection() {
     );
   }
 
+  const sectionCount = section ? (config as any)[section.key].length : 0;
+
   const handleAdd = () => {
     if (section.key === "shifts") {
       addShiftSystemConfigValue(shiftDraft);
@@ -67,7 +70,18 @@ export default function SettingsSection() {
       return;
     }
 
-    addConfigValue(section.key, draft);
+    if (section.key === "invoiceConfig") {
+      addInvoiceSystemConfigValue({
+        name: invoiceDraft.name,
+        watermarkLogo: invoiceDraft.watermarkLogo,
+        header: invoiceDraft.header,
+        footer: invoiceDraft.footer,
+      });
+      setInvoiceDraft({ name: "", watermarkLogo: "", header: "", footer: "" });
+      return;
+    }
+
+    addConfigValue(section.key as any, draft);
     setDraft("");
   };
 
@@ -83,7 +97,12 @@ export default function SettingsSection() {
       return;
     }
 
-    removeConfigValue(section.key, value);
+    if (section.key === "invoiceConfig") {
+      removeInvoiceSystemConfigValue(value);
+      return;
+    }
+
+    removeConfigValue(section.key as any, value);
   };
 
   const startInlineEdit = (teacherName: string, department: string, hourlyRate: number) => {
@@ -92,11 +111,7 @@ export default function SettingsSection() {
   };
 
   const saveInlineEdit = (teacherName: string, department: string) => {
-    addOvertimeSystemConfigValue({
-      teacherName,
-      department,
-      hourlyRate: Number(editingOvertimeRate),
-    });
+    addOvertimeSystemConfigValue({ teacherName, department, hourlyRate: Number(editingOvertimeRate) });
     setEditingOvertimeKey(null);
     setEditingOvertimeRate("");
   };
@@ -194,17 +209,115 @@ export default function SettingsSection() {
                 Add
               </button>
             </div>
+          ) : section.key === "invoiceConfig" ? (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] items-end">
+                <div>
+                  <label className="text-xs text-gray-600">Template name</label>
+                  <input
+                    type="text"
+                    value={invoiceDraft.name}
+                    onChange={(event) => setInvoiceDraft((c) => ({ ...c, name: event.target.value }))}
+                    placeholder="Template name"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-600">Logo / Watermark</label>
+                  <div className="mt-1 flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      aria-label="Upload invoice watermark or logo"
+                      title="Upload invoice watermark or logo"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => setInvoiceDraft((c) => ({ ...c, watermarkLogo: String(reader.result ?? "") }));
+                        reader.readAsDataURL(file);
+                      }}
+                      className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    {invoiceDraft.watermarkLogo ? (
+                      <img src={invoiceDraft.watermarkLogo} alt="logo preview" className="h-10 w-14 object-contain rounded" />
+                    ) : (
+                      <div className="h-10 w-14 rounded bg-gray-100 text-xs flex items-center justify-center text-gray-500">Preview</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={handleAdd}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+                  >
+                    <Add />
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs text-gray-600">Header image</label>
+                  <div className="mt-1 flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      aria-label="Upload invoice header image"
+                      title="Upload invoice header image"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => setInvoiceDraft((c) => ({ ...c, header: String(reader.result ?? "") }));
+                        reader.readAsDataURL(file);
+                      }}
+                      className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    {invoiceDraft.header ? (
+                      <img src={invoiceDraft.header} alt="header preview" className="h-10 w-40 object-contain rounded" />
+                    ) : (
+                      <div className="h-10 w-40 rounded bg-gray-100 text-xs flex items-center justify-center text-gray-500">Preview</div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600">Footer image</label>
+                  <div className="mt-1 flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      aria-label="Upload invoice footer image"
+                      title="Upload invoice footer image"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => setInvoiceDraft((c) => ({ ...c, footer: String(reader.result ?? "") }));
+                        reader.readAsDataURL(file);
+                      }}
+                      className="rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    {invoiceDraft.footer ? (
+                      <img src={invoiceDraft.footer} alt="footer preview" className="h-10 w-40 object-contain rounded" />
+                    ) : (
+                      <div className="h-10 w-40 rounded bg-gray-100 text-xs flex items-center justify-center text-gray-500">Preview</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : section.key === "overtimeConfig" ? (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_1.2fr_1fr_auto]">
                 <select
                   value={overtimeDraft.department}
                   onChange={(event) =>
-                    setOvertimeDraft((current) => ({
-                      ...current,
-                      department: event.target.value,
-                      teacherName: "",
-                    }))
+                    setOvertimeDraft((current) => ({ ...current, department: event.target.value, teacherName: "" }))
                   }
                   aria-label="Overtime department"
                   title="Overtime department"
@@ -226,17 +339,17 @@ export default function SettingsSection() {
                   className="rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
                 >
                   <option value="">{overtimeDraft.department ? "Select teacher" : "Select department first"}</option>
-                  {overtimeTeachers.length > 0 ? (
-                    overtimeTeachers.map((teacher) => (
-                      <option key={teacher.id} value={teacher.name}>
-                        {teacher.name}
-                      </option>
-                    ))
-                  ) : overtimeDraft.department ? (
-                    <option value="" disabled>
-                      No teachers found in this department
-                    </option>
-                  ) : null}
+                  {overtimeTeachers.length > 0
+                    ? overtimeTeachers.map((teacher) => (
+                        <option key={teacher.id} value={teacher.name}>
+                          {teacher.name}
+                        </option>
+                      ))
+                    : overtimeDraft.department ? (
+                        <option value="" disabled>
+                          No teachers found in this department
+                        </option>
+                      ) : null}
                 </select>
                 <input
                   type="number"
@@ -319,111 +432,138 @@ export default function SettingsSection() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            {section.key === "shifts"
-              ? config.shifts.map((shift) => (
-                  <button
-                    key={shift.name}
-                    type="button"
-                    onClick={() => handleDelete(shift.name)}
-                    className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                    title="Remove shift"
-                  >
-                    <span>
-                      {shift.name} {shift.startTime} - {shift.endTime}
-                    </span>
-                    <DeleteOutline fontSize="small" />
-                  </button>
-                ))
-              : section.key === "overtimeConfig"
-              ? config.overtimeConfig
-                  .filter((entry) => !overtimeDepartmentFilter || entry.department === overtimeDepartmentFilter)
-                  .filter((entry) => {
-                    const query = overtimeSearch.trim().toLowerCase();
-                    if (!query) {
-                      return true;
-                    }
-
-                    return (
-                      entry.teacherName.toLowerCase().includes(query) ||
-                      entry.department.toLowerCase().includes(query) ||
-                      String(entry.hourlyRate).includes(query)
-                    );
-                  })
-                  .map((entry) =>
-                    editingOvertimeKey === `${entry.teacherName}||${entry.department}` ? (
-                      <div
-                        key={`${entry.teacherName}||${entry.department}`}
-                        className="flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
-                      >
-                        <span>
-                          {entry.teacherName} ({entry.department})
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={editingOvertimeRate}
-                          onChange={(event) => setEditingOvertimeRate(event.target.value)}
-                          placeholder="Hourly rate"
-                          aria-label={`Hourly rate for ${entry.teacherName}`}
-                          className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => saveInlineEdit(entry.teacherName, entry.department)}
-                          className="rounded-md bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingOvertimeKey(null);
-                            setEditingOvertimeRate("");
-                          }}
-                          className="rounded-md border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+            {section.key === "shifts" ? (
+              config.shifts.map((shift) => (
+                <button
+                  key={shift.name}
+                  type="button"
+                  onClick={() => handleDelete(shift.name)}
+                  className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                  title="Remove shift"
+                >
+                  <span>
+                    {shift.name} {shift.startTime} - {shift.endTime}
+                  </span>
+                  <DeleteOutline fontSize="small" />
+                </button>
+              ))
+            ) : section.key === "invoiceConfig" ? (
+              config.invoiceConfig.map((entry) => (
+                <div
+                  key={entry.name}
+                  className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
+                >
+                  <div className="flex items-center gap-3">
+                    {entry.watermarkLogo ? (
+                      <img src={entry.watermarkLogo} alt={`${entry.name} logo`} className="h-8 w-12 object-contain rounded" />
                     ) : (
-                      <div
-                        key={`${entry.teacherName}||${entry.department}`}
-                        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
-                      >
-                        <span>
-                          {entry.teacherName} ({entry.department}) - ${entry.hourlyRate}/hr
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => startInlineEdit(entry.teacherName, entry.department, entry.hourlyRate)}
-                          className="rounded-full px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                          title="Edit overtime rate"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(`${entry.teacherName}||${entry.department}`)}
-                          className="rounded-full p-1 hover:bg-blue-100"
-                          title="Remove overtime rate"
-                        >
-                          <DeleteOutline fontSize="small" />
-                        </button>
-                      </div>
-                    ),
-                  )
-              : config[section.key].map((value) => (
+                      <div className="h-8 w-12 rounded bg-gray-100 text-xs flex items-center justify-center text-gray-500">No logo</div>
+                    )}
+                    <div className="text-sm">
+                      <div className="font-semibold">{entry.name}</div>
+                      {entry.header ? <div className="text-xs text-gray-600">Header set</div> : null}
+                      {entry.footer ? <div className="text-xs text-gray-600">Footer set</div> : null}
+                    </div>
+                  </div>
                   <button
-                    key={value}
                     type="button"
-                    onClick={() => handleDelete(value)}
-                    className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                    title="Remove option"
+                    onClick={() => handleDelete(entry.name)}
+                    className="rounded-full p-1 hover:bg-blue-100 ml-2"
+                    title="Remove template"
                   >
-                    {value}
                     <DeleteOutline fontSize="small" />
                   </button>
-                ))}
+                </div>
+              ))
+            ) : section.key === "overtimeConfig" ? (
+              config.overtimeConfig
+                .filter((entry) => !overtimeDepartmentFilter || entry.department === overtimeDepartmentFilter)
+                .filter((entry) => {
+                  const query = overtimeSearch.trim().toLowerCase();
+                  if (!query) return true;
+                  return (
+                    entry.teacherName.toLowerCase().includes(query) ||
+                    entry.department.toLowerCase().includes(query) ||
+                    String(entry.hourlyRate).includes(query)
+                  );
+                })
+                .map((entry) =>
+                  editingOvertimeKey === `${entry.teacherName}||${entry.department}` ? (
+                    <div
+                      key={`${entry.teacherName}||${entry.department}`}
+                      className="flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"
+                    >
+                      <span>
+                        {entry.teacherName} ({entry.department})
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingOvertimeRate}
+                        onChange={(event) => setEditingOvertimeRate(event.target.value)}
+                        placeholder="Hourly rate"
+                        aria-label={`Hourly rate for ${entry.teacherName}`}
+                        className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => saveInlineEdit(entry.teacherName, entry.department)}
+                        className="rounded-md bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingOvertimeKey(null);
+                          setEditingOvertimeRate("");
+                        }}
+                        className="rounded-md border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      key={`${entry.teacherName}||${entry.department}`}
+                      className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
+                    >
+                      <span>
+                        {entry.teacherName} ({entry.department}) - ${entry.hourlyRate}/hr
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => startInlineEdit(entry.teacherName, entry.department, entry.hourlyRate)}
+                        className="rounded-full px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                        title="Edit overtime rate"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(`${entry.teacherName}||${entry.department}`)}
+                        className="rounded-full p-1 hover:bg-blue-100"
+                        title="Remove overtime rate"
+                      >
+                        <DeleteOutline fontSize="small" />
+                      </button>
+                    </div>
+                  ),
+                )
+            ) : (
+              (config as any)[section.key].map((value: string) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleDelete(value)}
+                  className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                  title="Remove option"
+                >
+                  {value}
+                  <DeleteOutline fontSize="small" />
+                </button>
+              ))
+            )}
           </div>
         </div>
       </section>

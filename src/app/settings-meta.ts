@@ -17,6 +17,13 @@ export const settingsSections: SettingsSectionMeta[] = [
     path: "/settings/overtimeConfig",
   },
   {
+    key: "invoiceConfig",
+    title: "Invoice Config",
+    description: "Upload watermark/logo and set header/footer for invoices.",
+    placeholder: "Add an invoice template",
+    path: "/settings/invoiceConfig",
+  },
+  {
     key: "departments",
     title: "Departments",
     description: "Used when adding teachers and staff.",
