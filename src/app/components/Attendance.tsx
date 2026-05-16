@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { CalendarToday, CheckCircle, Cancel, Schedule, Search, AccessTime } from "@mui/icons-material";
+import { CalendarToday, CheckCircle, Cancel, Schedule, Search, AccessTime, Close } from "@mui/icons-material";
 import { ActionDialog, type ActionDialogValues } from "./ui/ActionDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { getTeachers } from "../teacher-data";
 
 type AttendanceRecord = {
@@ -74,7 +75,12 @@ export default function Attendance() {
   const [activeTab, setActiveTab] = useState<"attendance" | "overtime">("attendance");
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [overtimeCheckoutOpen, setOvertimeCheckoutOpen] = useState(false);
-  const [selectedTeacherForOvertime, setSelectedTeacherForOvertime] = useState<AttendanceRecord | null>(null);
+  const [overtimeRecordsOpen, setOvertimeRecordsOpen] = useState(false);
+    const [overtimeModalOpen, setOvertimeModalOpen] = useState(false);
+    const [overtimeModalDepartment, setOvertimeModalDepartment] = useState<string>("");
+    const [overtimeModalTeacher, setOvertimeModalTeacher] = useState<string>("");
+    const [overtimeCheckoutTime, setOvertimeCheckoutTime] = useState("");
+    const [selectedTeacherForOvertime, setSelectedTeacherForOvertime] = useState<AttendanceRecord | null>(null);
 
   const teachers = getTeachers();
   const departments = useMemo(() => {
@@ -222,18 +228,86 @@ export default function Attendance() {
     }
   };
 
+    const handleOvertimeModalSubmit = () => {
+      if (!overtimeModalTeacher || !overtimeCheckoutTime) {
+        alert("Please select a teacher and provide checkout time");
+        return;
+      }
+
+      const teacher = teachers.find((t) => t.id === Number(overtimeModalTeacher));
+      if (!teacher) return;
+
+        const shiftConfig = SHIFT_CONFIGS[(teacher.shift || "Morning") as keyof typeof SHIFT_CONFIGS] || SHIFT_CONFIGS.Morning;
+    
+      // Check if teacher already has a record for today
+      let existingRecord = visibleRecords.find((r) => r.teacherId === teacher.id);
+
+      if (!existingRecord) {
+        // Create default check-in if not exists
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        const checkInTime = `${hours}:${minutes}`;
+
+        existingRecord = {
+          id: Date.now(),
+          teacherId: teacher.id,
+          name: teacher.name,
+          department: teacher.department,
+          shift: teacher.shift || "Morning",
+          checkIn: checkInTime,
+          checkOut: null,
+          workingHours: "0h 0m",
+          status: getStatus(checkInTime),
+          overtime: "0h",
+          date: selectedDate,
+          shiftStartTime: shiftConfig.start,
+          shiftEndTime: shiftConfig.end,
+        };
+      }
+
+      const { hours } = calculateWorkingHours(existingRecord.checkIn, overtimeCheckoutTime);
+      const overtime = calculateOvertime(existingRecord.checkIn, overtimeCheckoutTime, shiftConfig.end);
+
+      setAttendanceRecords((current) => {
+        const filtered = current.filter((r) => !(r.teacherId === teacher.id && r.date === selectedDate));
+        return [
+          {
+            ...existingRecord,
+            checkOut: overtimeCheckoutTime,
+            workingHours: hours,
+            overtime,
+          },
+          ...filtered,
+        ];
+      });
+
+      // Reset and close modal
+      setOvertimeModalOpen(false);
+      setOvertimeModalDepartment("");
+      setOvertimeModalTeacher("");
+      setOvertimeCheckoutTime("");
+    };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Staff Attendance & Time Tracking</h2>
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => setOvertimeModalOpen(true)}
+              className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 whitespace-nowrap font-semibold"
+            >
+              Overtime
+            </button>
+          </div>
       </div>
 
       {/* Summary Cards */}
@@ -445,6 +519,17 @@ export default function Attendance() {
         {/* Overtime Management Tab */}
         {activeTab === "overtime" && (
           <div className="p-6 space-y-4">
+            {/* Header with Button */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Overtime Management</h3>
+              <button
+                onClick={() => setOvertimeRecordsOpen(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+              >
+                View Overtime Records
+              </button>
+            </div>
+
             {/* Department Filter */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Department</label>
@@ -500,47 +585,6 @@ export default function Attendance() {
                 })}
               </div>
             </div>
-
-            {/* Overtime Records */}
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Teachers with Recorded Overtime - {selectedDate}</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Teacher Name</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Department</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Check-In</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Check-Out</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Shift End</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Overtime</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRecords
-                      .filter(
-                        (r) =>
-                          r.overtime !== "0h" &&
-                          r.checkOut &&
-                          (!selectedDepartment || r.department === selectedDepartment),
-                      )
-                      .map((record) => (
-                        <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 font-medium text-gray-900">{record.name}</td>
-                          <td className="py-3 px-4 text-gray-700">{record.department}</td>
-                          <td className="py-3 px-4 font-mono text-gray-700">{record.checkIn}</td>
-                          <td className="py-3 px-4 font-mono text-gray-700">{record.checkOut}</td>
-                          <td className="py-3 px-4 font-mono text-gray-700">{record.shiftEndTime}</td>
-                          <td className="py-3 px-4 text-purple-600 font-semibold">{record.overtime}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-              {visibleRecords.filter((r) => r.overtime !== "0h" && r.checkOut && (!selectedDepartment || r.department === selectedDepartment)).length === 0 && (
-                <p className="mt-4 text-sm text-gray-500">No overtime records found.</p>
-              )}
-            </div>
           </div>
         )}
       </div>
@@ -564,6 +608,148 @@ export default function Attendance() {
         ]}
         onSubmit={handleOvertimeCheckout}
       />
+
+      {/* Overtime Records Modal */}
+      <Dialog open={overtimeRecordsOpen} onOpenChange={setOvertimeRecordsOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Teachers with Recorded Overtime - {selectedDate}</DialogTitle>
+          </DialogHeader>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Teacher Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Department</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Check-In</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Check-Out</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Shift End</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Overtime</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleRecords
+                  .filter(
+                    (r) =>
+                      r.overtime !== "0h" &&
+                      r.checkOut &&
+                      (!selectedDepartment || r.department === selectedDepartment),
+                  )
+                  .map((record) => (
+                    <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium text-gray-900">{record.name}</td>
+                      <td className="py-3 px-4 text-gray-700">{record.department}</td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{record.checkIn}</td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{record.checkOut}</td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{record.shiftEndTime}</td>
+                      <td className="py-3 px-4 text-purple-600 font-semibold">{record.overtime}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          {visibleRecords.filter((r) => r.overtime !== "0h" && r.checkOut && (!selectedDepartment || r.department === selectedDepartment)).length === 0 && (
+            <p className="mt-4 text-sm text-gray-500">No overtime records found.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+        {/* Overtime Modal */}
+        <Dialog open={overtimeModalOpen} onOpenChange={setOvertimeModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Record Overtime Checkout</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Department Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Department</label>
+                <select
+                  value={overtimeModalDepartment}
+                  onChange={(e) => {
+                    setOvertimeModalDepartment(e.target.value);
+                    setOvertimeModalTeacher(""); // Reset teacher when department changes
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Choose Department...</option>
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Teacher Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Teacher</label>
+                <select
+                  value={overtimeModalTeacher}
+                  onChange={(e) => setOvertimeModalTeacher(e.target.value)}
+                  disabled={!overtimeModalDepartment}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">Choose Teacher...</option>
+                  {overtimeModalDepartment &&
+                    teachers
+                      .filter((t) => t.department === overtimeModalDepartment)
+                      .map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.name} ({teacher.shift} Shift)
+                        </option>
+                      ))}
+                </select>
+              </div>
+
+              {/* Checkout Time Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Checkout Time (HH:MM)</label>
+                <input
+                  type="time"
+                  value={overtimeCheckoutTime}
+                  onChange={(e) => setOvertimeCheckoutTime(e.target.value)}
+                  disabled={!overtimeModalTeacher}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {/* Info */}
+              {overtimeModalTeacher && teachers.find((t) => t.id === Number(overtimeModalTeacher)) && (
+                <div className="bg-blue-50 p-3 rounded-lg text-sm">
+                  <p className="text-gray-700">
+                    <span className="font-semibold">Shift End Time:</span>{" "}
+                    {SHIFT_CONFIGS[teachers.find((t) => t.id === Number(overtimeModalTeacher))?.shift as keyof typeof SHIFT_CONFIGS]?.end || "16:00"}
+                  </p>
+                  <p className="text-gray-600 text-xs mt-1">Overtime will be calculated based on shift end time</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4 border-t">
+              <button
+                onClick={() => {
+                  setOvertimeModalOpen(false);
+                  setOvertimeModalDepartment("");
+                  setOvertimeModalTeacher("");
+                  setOvertimeCheckoutTime("");
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleOvertimeModalSubmit}
+                disabled={!overtimeModalTeacher || !overtimeCheckoutTime}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Record Overtime
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
