@@ -1,6 +1,7 @@
 import { Outlet, NavLink } from "react-router";
 import {
   Dashboard as DashboardIcon,
+  AdminPanelSettings,
   People,
   AccessTime,
   Assessment,
@@ -23,6 +24,7 @@ export default function Layout() {
 
   const adminMenuItems = [
     { path: "/", label: "Dashboard", icon: <DashboardIcon /> },
+    { path: "/admin-panel", label: "Students & Attendance", icon: <AdminPanelSettings /> },
     { path: "/teachers", label: "Teacher Profiles", icon: <People /> },
     { path: "/attendance", label: "Attendance", icon: <AccessTime /> },
     { path: "/payroll", label: "Payroll", icon: <AttachMoney /> },

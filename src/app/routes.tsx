@@ -15,6 +15,7 @@ import SettingsSection from "./components/SettingsSection";
 import RoleManagement from "./components/RoleManagement";
 import VacancyManagement from "./components/VacancyManagement";
 import TeacherPortal from "./components/TeacherPortal";
+import AdminPanel from "./components/AdminPanel";
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       { index: true, Component: Dashboard },
+      { path: "admin-panel", Component: AdminPanel },
       { path: "teachers", Component: TeacherProfile },
       { path: "teachers/:teacherId", Component: TeacherDetails },
       { path: "attendance", Component: Attendance },
