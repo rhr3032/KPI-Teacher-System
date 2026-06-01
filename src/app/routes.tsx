@@ -16,6 +16,7 @@ import RoleManagement from "./components/RoleManagement";
 import VacancyManagement from "./components/VacancyManagement";
 import TeacherPortal from "./components/TeacherPortal";
 import AdminPanel from "./components/AdminPanel";
+import AdmissionsManagement from "./components/AdmissionsManagement";
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       { index: true, Component: Dashboard },
+      { path: "admissions", Component: AdmissionsManagement },
       { path: "admin-panel", Component: AdminPanel },
       { path: "teachers", Component: TeacherProfile },
       { path: "teachers/:teacherId", Component: TeacherDetails },

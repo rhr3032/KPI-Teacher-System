@@ -2,6 +2,7 @@ import { Outlet, NavLink } from "react-router";
 import {
   Dashboard as DashboardIcon,
   AdminPanelSettings,
+  School,
   People,
   AccessTime,
   Assessment,
@@ -24,6 +25,7 @@ export default function Layout() {
 
   const adminMenuItems = [
     { path: "/", label: "Dashboard", icon: <DashboardIcon /> },
+    { path: "/admissions", label: "Admissions & Registration", icon: <School /> },
     { path: "/admin-panel", label: "Students & Attendance", icon: <AdminPanelSettings /> },
     { path: "/teachers", label: "Teacher Profiles", icon: <People /> },
     { path: "/attendance", label: "Attendance", icon: <AccessTime /> },
@@ -66,7 +68,7 @@ export default function Layout() {
         } bg-blue-900 text-white transition-all duration-300 flex flex-col`}
       >
         <div className="p-4 flex items-center justify-between border-b border-blue-800">
-          {sidebarOpen && <h1 className="text-xl font-bold">HR Management System</h1>}
+          {sidebarOpen && <h1 className="text-xl font-bold">KPI Teacher System</h1>}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle sidebar"
@@ -115,7 +117,7 @@ export default function Layout() {
       <main className="flex-1 overflow-y-auto">
         <header className="bg-white shadow-sm px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-800">Teacher Management System - {portalTitle}</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">KPI Teacher System - {portalTitle}</h2>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">{headerDate}</span>
             </div>

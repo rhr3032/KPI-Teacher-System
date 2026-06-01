@@ -5,14 +5,17 @@ import {
   Assignment,
   TrendingUp,
   TrendingDown,
+  School,
 } from "@mui/icons-material";
 import { useMemo, useState } from "react";
 import { BarChart, Bar, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getTeachers } from "../teacher-data";
 import { getDepartmentColor } from "../department-colors";
+import { getStudentSummary } from "../student-data";
 
 export default function Dashboard() {
   const teachers = useMemo(() => getTeachers(), []);
+  const studentSummary = useMemo(() => getStudentSummary(), []);
   const [attendanceFilter, setAttendanceFilter] = useState<"all" | "teacher" | "staff">("all");
   const staffAttendanceSnapshot = useMemo(
     () => [
@@ -28,6 +31,13 @@ export default function Dashboard() {
     { label: "Present Today", value: "234", change: "94.7%", trend: "up", icon: <AccessTime /> },
     { label: "Pending Leaves", value: "18", change: "-3", trend: "down", icon: <EventNote /> },
     { label: "Active Tasks", value: "42", change: "+5", trend: "up", icon: <Assignment /> },
+  ];
+
+  const studentStats = [
+    { label: "Total Students", value: String(studentSummary.totalStudents), icon: <School /> },
+    { label: "Active Students", value: String(studentSummary.activeStudents), icon: <TrendingUp /> },
+    { label: "Admissions Today", value: String(studentSummary.admissionsToday), icon: <EventNote /> },
+    { label: "Outstanding Fees", value: studentSummary.outstandingFees.toLocaleString(), icon: <TrendingDown /> },
   ];
 
   const departmentData = useMemo(() => {
@@ -132,6 +142,20 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="text-blue-600 text-4xl opacity-80">{stat.icon}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {studentStats.map((stat) => (
+          <div key={stat.label} className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</h3>
+              </div>
+              <div className="text-cyan-600 text-4xl opacity-80">{stat.icon}</div>
             </div>
           </div>
         ))}
