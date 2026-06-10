@@ -17,6 +17,7 @@ import VacancyManagement from "./components/VacancyManagement";
 import TeacherPortal from "./components/TeacherPortal";
 import AdminPanel from "./components/AdminPanel";
 import AdmissionsManagement from "./components/AdmissionsManagement";
+import { LibraryManagement, TransportManagement } from "./components/CollegeOperationsModules";
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +27,24 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Dashboard },
       { path: "admissions", Component: AdmissionsManagement },
+      { path: "library", Component: LibraryManagement },
+      { path: "library/dashboard", Component: LibraryManagement },
+      { path: "library/books", Component: LibraryManagement },
+      { path: "library/racks", Component: LibraryManagement },
+      { path: "library/borrow-return", Component: LibraryManagement },
+      { path: "library/reservations", Component: LibraryManagement },
+      { path: "library/fines", Component: LibraryManagement },
+      { path: "library/reports", Component: LibraryManagement },
+      { path: "transport", Component: TransportManagement },
+      { path: "transport/dashboard", Component: TransportManagement },
+      { path: "transport/routes", Component: TransportManagement },
+      { path: "transport/vehicles", Component: TransportManagement },
+      { path: "transport/drivers", Component: TransportManagement },
+      { path: "transport/vendors", Component: TransportManagement },
+      { path: "transport/contracts", Component: TransportManagement },
+      { path: "transport/student-allocation", Component: TransportManagement },
+      { path: "transport/maintenance", Component: TransportManagement },
+      { path: "transport/reports", Component: TransportManagement },
       { path: "admin-panel", Component: AdminPanel },
       { path: "teachers", Component: TeacherProfile },
       { path: "teachers/:teacherId", Component: TeacherDetails },

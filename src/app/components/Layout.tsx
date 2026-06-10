@@ -10,6 +10,8 @@ import {
   EventNote,
   ExitToApp,
   Inventory2,
+  LocalLibrary,
+  DirectionsBus,
   Settings as SettingsIcon,
   Menu,
 } from "@mui/icons-material";
@@ -26,6 +28,8 @@ export default function Layout() {
   const adminMenuItems = [
     { path: "/", label: "Dashboard", icon: <DashboardIcon /> },
     { path: "/admissions", label: "Admissions & Registration", icon: <School /> },
+    { path: "/library", label: "Library Management", icon: <LocalLibrary /> },
+    { path: "/transport", label: "Transport Management", icon: <DirectionsBus /> },
     { path: "/admin-panel", label: "Students & Attendance", icon: <AdminPanelSettings /> },
     { path: "/teachers", label: "Teacher Profiles", icon: <People /> },
     { path: "/attendance", label: "Attendance", icon: <AccessTime /> },
